@@ -71,7 +71,7 @@
         </ul>
         </div>
         <div class="tab-content" id="mainTabsContent">
-            <div class="tab-pane fade show active" id="pan-resum" role="tabpanel"><div class="btn-group mb-3" role="group" id="resum-fase-buttons" style="display:none"><button type="button" class="btn btn-outline-secondary active" data-fase="total">Total</button><button type="button" class="btn btn-outline-secondary" data-fase="fase1">Fase 1</button><button type="button" class="btn btn-outline-secondary" data-fase="fase2">Fase 2</button></div><div id="resum-block-total" class="resum-fase-block"><div id="resum-firestore-status" class="text-muted mb-3">Carregant dades des de Firestore...</div><div id="resum-metrics"></div><div id="resum-table"></div></div><div id="resum-block-fase1" class="resum-fase-block" style="display:none;"></div><div id="resum-block-fase2" class="resum-fase-block" style="display:none;"></div></div>
+            <div class="tab-pane fade show active" id="pan-resum" role="tabpanel"><div class="btn-group mb-3" role="group" id="resum-fase-buttons"><button type="button" class="btn btn-outline-secondary active" data-fase="total">Total</button><button type="button" class="btn btn-outline-secondary" data-fase="fase1">Fase 1</button><button type="button" class="btn btn-outline-secondary" data-fase="fase2">Fase 2</button></div><div id="resum-block-total" class="resum-fase-block"><div id="resum-firestore-status" class="text-muted mb-3">Carregant dades des de Firestore...</div><div id="resum-metrics"></div><div id="resum-table"></div></div><div id="resum-block-fase1" class="resum-fase-block" style="display:none;"></div><div id="resum-block-fase2" class="resum-fase-block" style="display:none;"></div></div>
             <div class="tab-pane fade" id="pan-ultima" role="tabpanel"><div id="detall-jornada-content"><div class="detall-jornada-status text-muted">Carregant dades des de Firestore...</div><div class="detall-jornada-body"></div></div></div>
             <div class="tab-pane fade" id="pan-detall" role="tabpanel"><div id="per-jugador-content"><div class="per-jugador-status text-muted">Carregant dades des de Firestore...</div><div class="per-jugador-body"></div></div></div>
             <div class="tab-pane fade" id="pan-combinacions" role="tabpanel"><div id="combinacions-content"><div class="combinacions-status text-muted">Carregant dades des de Firestore...</div><div class="combinacions-body"></div></div></div>
@@ -258,7 +258,7 @@
 
     function esc(s) { if (s == null || s === undefined) return ''; var d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; }
 
-    function renderResumFromFirestore(resum) {
+    function renderResumFromFirestore(resum, fase) {
         var statusEl = document.getElementById('resum-firestore-status');
         var metricsEl = document.getElementById('resum-metrics');
         var tableEl = document.getElementById('resum-table');
@@ -266,7 +266,13 @@
 
         function fmtPct(v) { return (v === null || v === undefined) ? '—' : (String(v) + '%'); }
 
-        var eq = (resum && resum.equips) ? resum.equips : {};
+        var data = resum || {};
+        if (fase && resum && resum.fases) {
+            if (fase === 'fase1' && resum.fases.fase1) data = resum.fases.fase1;
+            else if (fase === 'fase2' && resum.fases.fase2) data = resum.fases.fase2;
+        }
+
+        var eq = (data && data.equips) ? data.equips : {};
         var nomTemporada = (resum && resum.nomTemporada) ? resum.nomTemporada : '';
         var metricsHtml = ''
           + '<div class="card mb-4">'
@@ -284,7 +290,7 @@
           + '</div></div></div>';
         metricsEl.innerHTML = metricsHtml;
 
-        var jugadors = (resum && resum.jugadors) ? resum.jugadors : [];
+        var jugadors = (data && data.jugadors) ? data.jugadors : [];
         var rows = '';
         for (var i = 0; i < jugadors.length; i++) {
             var j = jugadors[i] || {};
@@ -333,7 +339,8 @@
                 if (statusEl) statusEl.innerHTML = '<span class="text-danger">No hi ha dades a Firestore: stats/resum</span>';
                 return;
             }
-            renderResumFromFirestore(doc.data());
+            window._resumData = doc.data();
+            renderResumFromFirestore(window._resumData, 'total');
         }).catch(function(err) {
             if (statusEl) statusEl.innerHTML = '<span class="text-danger">Error llegint Firestore: ' + esc(err && (err.message || err.code) || err) + '</span>';
         });
@@ -711,9 +718,15 @@
                 var fase = this.getAttribute('data-fase');
                 resumFaseBtns.querySelectorAll('button').forEach(function(b) { b.classList.remove('active'); });
                 this.classList.add('active');
-                document.querySelectorAll('.resum-fase-block').forEach(function(block) {
-                    block.style.display = block.id === 'resum-block-' + fase ? 'block' : 'none';
-                });
+                if (window._resumData) {
+                    renderResumFromFirestore(window._resumData, fase);
+                }
+                var u = auth && auth.currentUser;
+                if (u) {
+                    var label = 'Resum totals - ' + (fase === 'total' ? 'Total' : (fase === 'fase1' ? 'Fase 1' : 'Fase 2'));
+                    logActivity('tab_click', u, { page: 'pan-resum', text: label });
+                    logActivity('tab_view', u, { page: 'pan-resum', text: label });
+                }
             });
         });
     };
