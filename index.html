@@ -75,7 +75,16 @@
             <div class="tab-pane fade" id="pan-ultima" role="tabpanel"><div id="detall-jornada-content"><div class="detall-jornada-status text-muted">Carregant dades des de Firestore...</div><div class="detall-jornada-body"></div></div></div>
             <div class="tab-pane fade" id="pan-detall" role="tabpanel"><div id="per-jugador-content"><div class="per-jugador-status text-muted">Carregant dades des de Firestore...</div><div class="per-jugador-body"></div></div></div>
             <div class="tab-pane fade" id="pan-combinacions" role="tabpanel"><div id="combinacions-content"><div class="combinacions-status text-muted">Carregant dades des de Firestore...</div><div class="combinacions-body"></div></div></div>
-            <div class="tab-pane fade" id="pan-auditories" role="tabpanel"><div id="auditories-content" class="p-3"><p class="text-muted">Carregant...</p></div></div>
+            <div class="tab-pane fade" id="pan-auditories" role="tabpanel">
+                <div class="p-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Auditories usuari</strong>
+                        <div class="small text-muted">Dades llegides de Firestore</div>
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-recarregar-auditories">Recarregar</button>
+                </div>
+                <div id="auditories-content" class="p-3 pt-0"><p class="text-muted">Carregant...</p></div>
+            </div>
             <div class="tab-pane fade" id="pan-24-25" role="tabpanel" data-temporada-id="24-25"><div class="temporada-status text-muted">Carregant...</div><div class="temporada-body"></div></div>
         </div>
     </div>
@@ -559,7 +568,6 @@
                 container.innerHTML = '<p class="text-muted">Encara no hi ha activitat registrada.</p>';
                 return;
             }
-            var cutoff15d = Date.now() - 15 * 24 * 60 * 60 * 1000;
             var byUser = {};
             for (var i = 0; i < docs.length; i++) {
                 var doc = docs[i];
@@ -569,7 +577,7 @@
                 byUser[email].count++;
                 var ts = (d.timestamp && d.timestamp.toMillis) ? d.timestamp.toMillis() : 0;
                 byUser[email].types[d.type] = (byUser[email].types[d.type] || 0) + 1;
-                if ((d.type === 'tab_view' || d.type === 'tab_click') && d.text && ts >= cutoff15d) {
+                if ((d.type === 'tab_view' || d.type === 'tab_click') && d.text) {
                     var lbl = (d.text || '').substring(0, 80);
                     if (d.type === 'tab_view') byUser[email].tabViews[lbl] = (byUser[email].tabViews[lbl] || 0) + 1;
                     var dateObj = new Date(ts);
@@ -578,7 +586,7 @@
                     var key = d.type === 'tab_view' ? 'tabView' : 'tabClick';
                     byUser[email].byDay[dateStr][key][lbl] = (byUser[email].byDay[dateStr][key][lbl] || 0) + 1;
                 }
-                if (d.type === 'login' && ts >= cutoff15d) {
+                if (d.type === 'login') {
                     var dateObj = new Date(ts);
                     var dateStr = dateObj.getFullYear() + '-' + String(dateObj.getMonth() + 1).padStart(2, '0') + '-' + String(dateObj.getDate()).padStart(2, '0');
                     if (!byUser[email].byDay[dateStr]) byUser[email].byDay[dateStr] = { tabView: {}, tabClick: {}, login: 0 };
@@ -594,7 +602,7 @@
             }
             var html = ''
               + '<h5 class="mb-3">Activitat per usuari <span class="text-muted small">(' + docs.length + ' esdeveniments)</span></h5>'
-              + '<p class="text-muted small mb-3">Per cada usuari i dia: logins, tab views i tab clicks (darrers 15 dies).</p>';
+              + '<p class="text-muted small mb-3">Per cada usuari i dia: logins, tab views i tab clicks (tota l\'activitat).</p>';
             var emails = Object.keys(byUser).sort(function(a,b) { return byUser[b].count - byUser[a].count; });
             for (var j = 0; j < emails.length; j++) {
                 var email = emails[j];
@@ -648,8 +656,8 @@
                   +   '<div class="card-body py-2">'
                   +     '<div class="small text-muted mb-2">' + esc(typesStr) + '</div>'
                   +     (byDayHtml
-                        ? '<div class="mt-2"><div class="d-flex justify-content-between align-items-center mb-2"><strong>Dies (darrers 15)</strong><span class="text-muted small">clica per desplegar</span></div><div class="accordion" id="' + accId + '">' + byDayHtml + '</div></div>'
-                        : '<div class="text-muted small">Sense activitat registrada els darrers 15 dies.</div>')
+                        ? '<div class="mt-2"><div class="d-flex justify-content-between align-items-center mb-2"><strong>Dies</strong><span class="text-muted small">clica per desplegar</span></div><div class="accordion" id="' + accId + '">' + byDayHtml + '</div></div>'
+                        : '<div class="text-muted small">Sense activitat registrada.</div>')
                   +   '</div>'
                   + '</div>';
             }
@@ -690,6 +698,11 @@
                 showError('Error: ' + msg);
             });
     }
+
+    var btnRecarregarAud = document.getElementById('btn-recarregar-auditories');
+    if (btnRecarregarAud) btnRecarregarAud.addEventListener('click', function() {
+        if (auth && auth.currentUser && isAuditAdmin(auth.currentUser)) loadAuditories();
+    });
 
     var resumFaseBtns = document.getElementById('resum-fase-buttons');
     if (resumFaseBtns) {
