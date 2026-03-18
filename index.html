@@ -274,9 +274,12 @@
 
         var eq = (data && data.equips) ? data.equips : {};
         var nomTemporada = (resum && resum.nomTemporada) ? resum.nomTemporada : '';
+        var titolCard = nomTemporada;
+        if (fase === 'fase1') titolCard = (nomTemporada ? nomTemporada + ' ' : '') + '(Fase 1)';
+        else if (fase === 'fase2') titolCard = (nomTemporada ? nomTemporada + ' ' : '') + '(Fase 2)';
         var metricsHtml = ''
           + '<div class="card mb-4">'
-          + '<div class="card-header bg-secondary text-white"><strong>Mètriques d\'equip ' + esc(nomTemporada) + '</strong></div>'
+          + '<div class="card-header bg-secondary text-white"><strong>Mètriques d\'equip ' + esc(titolCard) + '</strong></div>'
           + '<div class="card-body">'
           + '<div class="row">'
           + '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>PPM a favor</strong><br><span class="h5">' + esc(eq.ppmFavor) + '</span></div></div>'
@@ -287,7 +290,19 @@
           + '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>Punts per partit en contra</strong><br><span class="h5">' + esc(eq.ppgContra) + '</span></div></div>'
           + '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>TL%</strong><br><span class="h5">' + esc(fmtPct(eq.ftEquipPct)) + '</span></div></div>'
           + '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>Salts inicials guanyats %</strong><br><span class="h5">' + esc(fmtPct(eq.saltInicialPct)) + '</span></div></div>'
-          + '</div></div></div>';
+          + '</div>'
+          + '<hr class="my-3">'
+          + '<p class="text-muted small mb-1"><strong>Com es calcula cada mètrica:</strong></p>'
+          + '<ul class="small text-muted mb-0">'
+          + '<li><strong>PPM a favor</strong> = Punts totals a favor ÷ Minuts totals jugats (per l'equip)</li>'
+          + '<li><strong>PPM en contra</strong> = Punts totals en contra ÷ Minuts totals jugats</li>'
+          + '<li><strong>Punts totals a favor</strong> = Suma dels punts marcats per l'equip en tots els partits</li>'
+          + '<li><strong>Punts totals en contra</strong> = Suma dels punts marcats pels rivals en tots els partits</li>'
+          + '<li><strong>Punts per partit a favor</strong> = Punts totals a favor ÷ Nombre de partits</li>'
+          + '<li><strong>Punts per partit en contra</strong> = Punts totals en contra ÷ Nombre de partits</li>'
+          + '<li><strong>TL% (tirs lliures)</strong> = (TL encertats ÷ TL intentats) × 100</li>'
+          + '<li><strong>Salts inicials guanyats %</strong> = (Salts guanyats ÷ Total salts inicials) × 100</li>'
+          + '</ul></div></div>';
         metricsEl.innerHTML = metricsHtml;
 
         var jugadors = (data && data.jugadors) ? data.jugadors : [];
