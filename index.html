@@ -461,7 +461,7 @@
             return '<div class="table-responsive"><table class="table table-striped table-bordered table-sm"><thead class="thead-dark"><tr>' + headers + '</tr></thead><tbody>' + r + '</tbody></table></div>';
         }
         function blocCombo(entries, k, colHeader, prefix) {
-            var list = entries[k] || [];
+            var list = (entries[k] || []).filter(function(e) { return Number(e.minuts) > 0; });
             var rows = list.slice(0, 5).map(function(e, i) {
                 var detId = prefix + '-' + k + '-' + i;
                 var detHtml = (e.detall && e.detall.length) ? '<tr class="combinacions-detall-fila"><td colspan="5" class="p-0 border-top-0"><div id="' + detId + '" class="collapse"><div class="p-2 bg-light"><table class="table table-sm table-bordered mb-0"><thead class="thead-light"><tr><th>Partit</th><th>' + colHeader + '</th></tr></thead><tbody>' + e.detall.map(function(d) { return '<tr><td>' + esc(d.partit) + '</td><td>' + esc(d.value) + '</td></tr>'; }).join('') + '</tbody></table></div></div></td></tr>' : '';
