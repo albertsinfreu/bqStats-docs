@@ -563,6 +563,7 @@
         var status = panel.querySelector('.temporada-status');
         if (!body) return;
         function fmtPct(v) { return (v == null) ? '—' : (v + '%'); }
+        function fmtNum(v) { return (v == null) ? '—' : String(v); }
         var eq = te.equips || {};
         var html = '<div class="card mb-4"><div class="card-header bg-secondary text-white"><strong>Mètriques d\'equip ' + esc(te.nom) + '</strong></div><div class="card-body"><div class="row">';
         html += '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>PPM a favor</strong><br><span class="h5">' + esc(eq.ppmFavor) + '</span></div></div>';
@@ -572,7 +573,9 @@
         html += '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>Punts per partit a favor</strong><br><span class="h5">' + esc(eq.ppgFavor) + '</span></div></div>';
         html += '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>Punts per partit en contra</strong><br><span class="h5">' + esc(eq.ppgContra) + '</span></div></div>';
         html += '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>TL%</strong><br><span class="h5">' + fmtPct(eq.ftEquipPct) + '</span></div></div>';
-        html += '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>Salts inicials %</strong><br><span class="h5">' + fmtPct(eq.saltInicialPct) + '</span></div></div></div></div></div>';
+        html += '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>Salts inicials %</strong><br><span class="h5">' + fmtPct(eq.saltInicialPct) + '</span></div></div>';
+        html += '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>Faltes rebudes/partit</strong><br><span class="h5">' + fmtNum(eq.faltesRebudesPerPartit) + '</span></div></div>';
+        html += '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>Faltes comeses/partit</strong><br><span class="h5">' + fmtNum(eq.faltesComesesPerPartit) + '</span></div></div></div></div></div>';
         var jugadors = te.jugadors || [];
         var rows = jugadors.map(function(j) { return '<tr><td>' + esc(j.nom) + '</td><td>' + esc(j.totalPlusminus) + '</td><td>' + esc(j.totalMinuts) + '</td><td>' + esc(j.partitsJugats) + '</td><td>' + esc(j.partitsTitular) + '</td><td>' + esc(j.totalFouls) + '</td><td>' + esc(j.foulsPerPartit) + '</td><td>' + esc(j.foulsPerMinut) + '</td><td>' + fmtPct(j.ftPct) + '</td><td>' + esc(j.totalPoints) + '</td></tr>'; }).join('');
         html += '<div class="table-responsive"><table class="table table-striped table-bordered table-sm"><thead class="thead-dark"><tr><th>Jugador</th><th>+/-</th><th>Minuts</th><th>Partits jugats</th><th>Partits titular</th><th>Faltes</th><th>Faltes/partit</th><th>Faltes/min</th><th>TL%</th><th>Punts</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
