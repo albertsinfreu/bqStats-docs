@@ -392,6 +392,8 @@
               + '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>Punts totals en contra</strong><br><span class="h5">' + esc(eq.puntosTotalesContra) + '</span></div></div>'
               + '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>TL%</strong><br><span class="h5">' + esc(fmtPct(eq.ftEquipPct)) + '</span></div></div>'
               + '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>Salt inicial guanyat</strong><br><span class="h5">' + esc(eq.saltInicialSiNo || '—') + '</span></div></div>'
+              + '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>Faltes comeses (partit)</strong><br><span class="h5">' + esc(eq.faltesComesesPartit) + '</span></div></div>'
+              + '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>Faltes rebudes (partit)</strong><br><span class="h5">' + esc(eq.faltesRebudesPartit) + '</span></div></div>'
               + '</div></div></div>';
             var topM = (p.topMillors || []).map(function(x) { return '<tr><td>' + esc(x.nom) + '</td><td class="text-center">' + x.pmMillors + '</td><td class="text-center">' + x.atacMillors + '</td><td class="text-center">' + x.defMillors + '</td></tr>'; }).join('');
             var topP = (p.topPitjors || []).map(function(x) { return '<tr><td>' + esc(x.nom) + '</td><td class="text-center">' + x.pmPitjors + '</td><td class="text-center">' + x.atacPitjors + '</td><td class="text-center">' + x.defPitjors + '</td></tr>'; }).join('');
