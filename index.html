@@ -825,7 +825,7 @@
                 if (cmp === 0 && tbIdx >= 0) {
                     var aTb = parseFloat((a.children[tbIdx].textContent || '').trim().replace(',', '.'));
                     var bTb = parseFloat((b.children[tbIdx].textContent || '').trim().replace(',', '.'));
-                    if (!isNaN(aTb) && !isNaN(bTb)) cmp = bTb - aTb;
+                    if (!isNaN(aTb) && !isNaN(bTb)) cmp = aTb - bTb;
                 }
                 return next === 'asc' ? cmp : -cmp;
             });
