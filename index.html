@@ -265,6 +265,7 @@
         if (!metricsEl || !tableEl) return;
 
         function fmtPct(v) { return (v === null || v === undefined) ? '—' : (String(v) + '%'); }
+        function fmtNum(v) { return (v === null || v === undefined) ? '—' : String(v); }
 
         var data = resum || {};
         if (fase && resum && resum.fases) {
@@ -290,6 +291,8 @@
           + '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>Punts per partit en contra</strong><br><span class="h5">' + esc(eq.ppgContra) + '</span></div></div>'
           + '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>TL%</strong><br><span class="h5">' + esc(fmtPct(eq.ftEquipPct)) + '</span></div></div>'
           + '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>Salts inicials guanyats %</strong><br><span class="h5">' + esc(fmtPct(eq.saltInicialPct)) + '</span></div></div>'
+          + '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>Faltes rebudes/partit</strong><br><span class="h5">' + esc(fmtNum(eq.faltesRebudesPerPartit)) + '</span></div></div>'
+          + '<div class="col-md-4 col-6 mb-2"><div class="p-2 bg-light rounded text-center"><strong>Faltes comeses/partit</strong><br><span class="h5">' + esc(fmtNum(eq.faltesComesesPerPartit)) + '</span></div></div>'
           + '</div>'
           + '<hr class="my-3">'
           + '<p class="text-muted small mb-1"><strong>Com es calcula cada mètrica:</strong></p>'
@@ -302,6 +305,8 @@
           + '<li><strong>Punts per partit en contra</strong> = Punts totals en contra ÷ Nombre de partits</li>'
           + '<li><strong>TL% (tirs lliures)</strong> = (TL encertats ÷ TL intentats) × 100</li>'
           + '<li><strong>Salts inicials guanyats %</strong> = (Salts guanyats ÷ Total salts inicials) × 100</li>'
+          + '<li><strong>Faltes comeses/partit</strong> = Total faltes comeses ÷ Nombre de partits</li>'
+          + '<li><strong>Faltes rebudes/partit</strong> = Total faltes rebudes ÷ Nombre de partits</li>'
           + '</ul></div></div>';
         metricsEl.innerHTML = metricsHtml;
 
