@@ -337,6 +337,7 @@
             rows += '<tr>'
               + '<td>' + esc(j.nom) + '</td>'
               + '<td class="text-center">' + esc(j.totalPlusminus) + '</td>'
+              + '<td class="text-center">' + esc(j.totalVal) + '</td>'
               + '<td class="text-center">' + esc(j.totalMinuts) + '</td>'
               + '<td class="text-center">' + esc(j.partitsJugats) + '</td>'
               + '<td class="text-center">' + esc(j.partitsTitular) + '</td>'
@@ -353,6 +354,7 @@
           + '<thead class="thead-dark"><tr>'
           + '<th class="sortable">Jugador <span class="sort-icon"></span></th>'
           + '<th class="text-center sortable">+/- <span class="sort-icon"></span></th>'
+          + '<th class="text-center sortable" data-tiebreak="Punts">VAL <span class="sort-icon"></span></th>'
           + '<th class="text-center sortable">Minuts <span class="sort-icon"></span></th>'
           + '<th class="text-center sortable">Partits jugats <span class="sort-icon"></span></th>'
           + '<th class="text-center sortable">Partits titular <span class="sort-icon"></span></th>'
@@ -576,8 +578,8 @@
         var eq = te.equips || {};
         var html = renderMetriquesEquip(eq, { titol: te.nom });
         var jugadors = te.jugadors || [];
-        var rows = jugadors.map(function(j) { return '<tr><td>' + esc(j.nom) + '</td><td>' + esc(j.totalPlusminus) + '</td><td>' + esc(j.totalMinuts) + '</td><td>' + esc(j.partitsJugats) + '</td><td>' + esc(j.partitsTitular) + '</td><td>' + esc(j.totalFouls) + '</td><td>' + esc(j.foulsPerPartit) + '</td><td>' + esc(j.foulsPerMinut) + '</td><td>' + fmtPct(j.ftPct) + '</td><td>' + esc(j.totalPoints) + '</td></tr>'; }).join('');
-        html += '<div class="table-responsive"><table class="table table-striped table-bordered table-sm"><thead class="thead-dark"><tr><th>Jugador</th><th>+/-</th><th>Minuts</th><th>Partits jugats</th><th>Partits titular</th><th>Faltes</th><th>Faltes/partit</th><th>Faltes/min</th><th>TL%</th><th>Punts</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+        var rows = jugadors.map(function(j) { return '<tr><td>' + esc(j.nom) + '</td><td>' + esc(j.totalPlusminus) + '</td><td>' + esc(j.totalVal) + '</td><td>' + esc(j.totalMinuts) + '</td><td>' + esc(j.partitsJugats) + '</td><td>' + esc(j.partitsTitular) + '</td><td>' + esc(j.totalFouls) + '</td><td>' + esc(j.foulsPerPartit) + '</td><td>' + esc(j.foulsPerMinut) + '</td><td>' + fmtPct(j.ftPct) + '</td><td>' + esc(j.totalPoints) + '</td></tr>'; }).join('');
+        html += '<div class="table-responsive"><table class="table table-striped table-bordered table-sm"><thead class="thead-dark"><tr><th>Jugador</th><th>+/-</th><th>VAL</th><th>Minuts</th><th>Partits jugats</th><th>Partits titular</th><th>Faltes</th><th>Faltes/partit</th><th>Faltes/min</th><th>TL%</th><th>Punts</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
         body.innerHTML = html;
         if (status) status.style.display = 'none';
     }
