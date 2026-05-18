@@ -71,7 +71,7 @@
         </ul>
         </div>
         <div class="tab-content" id="mainTabsContent">
-            <div class="tab-pane fade show active" id="pan-resum" role="tabpanel"><div class="btn-group mb-3" role="group" id="resum-fase-buttons"><button type="button" class="btn btn-outline-secondary active" data-fase="total">Total</button><button type="button" class="btn btn-outline-secondary" data-fase="fase1">Fase 1</button><button type="button" class="btn btn-outline-secondary" data-fase="fase2">Fase 2</button></div><div id="resum-block-total" class="resum-fase-block"><div id="resum-firestore-status" class="text-muted mb-3">Carregant dades des de Firestore...</div><div id="resum-metrics"></div><div id="resum-table"></div></div><div id="resum-block-fase1" class="resum-fase-block" style="display:none;"></div><div id="resum-block-fase2" class="resum-fase-block" style="display:none;"></div></div>
+            <div class="tab-pane fade show active" id="pan-resum" role="tabpanel"><div class="btn-group mb-3" role="group" id="resum-fase-buttons"><button type="button" class="btn btn-outline-secondary active" data-fase="total">Total</button><button type="button" class="btn btn-outline-secondary" data-fase="fase1">Fase 1</button><button type="button" class="btn btn-outline-secondary" data-fase="fase2">Fase 2</button><button type="button" class="btn btn-outline-secondary" data-fase="fase3">Fase 3</button></div><div id="resum-block-total" class="resum-fase-block"><div id="resum-firestore-status" class="text-muted mb-3">Carregant dades des de Firestore...</div><div id="resum-metrics"></div><div id="resum-table"></div></div><div id="resum-block-fase1" class="resum-fase-block" style="display:none;"></div><div id="resum-block-fase2" class="resum-fase-block" style="display:none;"></div><div id="resum-block-fase3" class="resum-fase-block" style="display:none;"></div></div>
             <div class="tab-pane fade" id="pan-ultima" role="tabpanel"><div id="detall-jornada-content"><div class="detall-jornada-status text-muted">Carregant dades des de Firestore...</div><div class="detall-jornada-body"></div></div></div>
             <div class="tab-pane fade" id="pan-detall" role="tabpanel"><div id="per-jugador-content"><div class="per-jugador-status text-muted">Carregant dades des de Firestore...</div><div class="per-jugador-body"></div></div></div>
             <div class="tab-pane fade" id="pan-combinacions" role="tabpanel"><div id="combinacions-content"><div class="combinacions-status text-muted">Carregant dades des de Firestore...</div><div class="combinacions-body"></div></div></div>
@@ -321,6 +321,7 @@
         if (fase && resum && resum.fases) {
             if (fase === 'fase1' && resum.fases.fase1) data = resum.fases.fase1;
             else if (fase === 'fase2' && resum.fases.fase2) data = resum.fases.fase2;
+            else if (fase === 'fase3' && resum.fases.fase3) data = resum.fases.fase3;
         }
 
         var eq = (data && data.equips) ? data.equips : {};
@@ -328,6 +329,7 @@
         var titolCard = nomTemporada;
         if (fase === 'fase1') titolCard = (nomTemporada ? nomTemporada + ' ' : '') + '(Fase 1)';
         else if (fase === 'fase2') titolCard = (nomTemporada ? nomTemporada + ' ' : '') + '(Fase 2)';
+        else if (fase === 'fase3') titolCard = (nomTemporada ? nomTemporada + ' ' : '') + '(Fase 3)';
         var metricsHtml = renderMetriquesEquip(eq, { titol: titolCard, showLlegenda: true });
         metricsEl.innerHTML = metricsHtml;
 
@@ -768,7 +770,7 @@
                 }
                 var u = auth && auth.currentUser;
                 if (u) {
-                    var label = 'Resum totals - ' + (fase === 'total' ? 'Total' : (fase === 'fase1' ? 'Fase 1' : 'Fase 2'));
+                    var label = 'Resum totals - ' + (fase === 'total' ? 'Total' : (fase === 'fase1' ? 'Fase 1' : (fase === 'fase2' ? 'Fase 2' : (fase === 'fase3' ? 'Fase 3' : fase))));
                     logActivity('tab_click', u, { page: 'pan-resum', text: label });
                     logActivity('tab_view', u, { page: 'pan-resum', text: label });
                 }
