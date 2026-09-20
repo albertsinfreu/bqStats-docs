@@ -33,6 +33,8 @@
         .btn-entrada-jugador, .btn-entrada-stat { min-height: 56px; font-weight: 600; white-space: normal; }
         .btn-entrada-stat .entrada-stat-count { display: block; font-size: 1.35rem; line-height: 1.1; }
         .btn-entrada-stat:disabled { opacity: 0.65; }
+        .entrada-jugador-cell { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+        .btn-editar-stats { flex-shrink: 0; white-space: nowrap; }
         @media (min-width: 576px) {
             .entrada-btn-grid { grid-template-columns: repeat(3, 1fr); }
         }
@@ -73,7 +75,7 @@
             <li class="nav-item"><a class="nav-link" id="tab-ultima" data-toggle="tab" href="#pan-ultima" role="tab">Detall jornada</a></li>
             <li class="nav-item"><a class="nav-link" id="tab-detall" data-toggle="tab" href="#pan-detall" role="tab">Per jugador</a></li>
             <li class="nav-item"><a class="nav-link" id="tab-combinacions" data-toggle="tab" href="#pan-combinacions" role="tab">Combinacions</a></li>
-            <li class="nav-item"><a class="nav-link" id="tab-entrada" data-toggle="tab" href="#pan-entrada" role="tab">Introduir stats</a></li>
+            <li class="nav-item" id="nav-item-entrada" style="display:none"><a class="nav-link" id="tab-entrada" data-toggle="tab" href="#pan-entrada" role="tab">Stats Manuals</a></li>
             <li class="nav-item" id="nav-item-auditories" style="display:none"><a class="nav-link" id="tab-auditories" data-toggle="tab" href="#pan-auditories" role="tab">Auditories usuari</a></li>
             <li class="nav-item"><a class="nav-link" id="tab-24-25" data-toggle="tab" href="#pan-24-25" role="tab">Temporada 24-25</a></li><li class="nav-item"><a class="nav-link" id="tab-25-26" data-toggle="tab" href="#pan-25-26" role="tab">Temporada 25-26</a></li>
         </ul>
@@ -84,22 +86,36 @@
             <div class="tab-pane fade" id="pan-detall" role="tabpanel"><div id="per-jugador-content"><div class="per-jugador-status text-muted">Carregant dades des de Firestore...</div><div class="per-jugador-body"></div></div></div>
             <div class="tab-pane fade" id="pan-combinacions" role="tabpanel"><div id="combinacions-content"><div class="combinacions-status text-muted">Carregant dades des de Firestore...</div><div class="combinacions-body"></div></div></div>
             <div class="tab-pane fade" id="pan-entrada" role="tabpanel">
-                <div class="form-group">
-                    <label for="select-entrada-partit"><strong>Partit</strong></label>
-                    <select id="select-entrada-partit" class="form-control select-jornada"></select>
+                <div class="btn-group mb-3" role="group" id="entrada-seccio-buttons">
+                    <button type="button" class="btn btn-outline-secondary active" data-seccio="intro">Introducció manual</button>
+                    <button type="button" class="btn btn-outline-secondary" data-seccio="visu">Visualització</button>
                 </div>
-                <div id="entrada-jugadors-wrap">
-                    <p class="text-muted small mb-2">Tria un jugador per anotar estadístiques.</p>
-                    <div id="entrada-jugadors" class="entrada-btn-grid"></div>
-                </div>
-                <div id="entrada-stats-wrap" style="display:none;">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="mb-0" id="entrada-jugador-nom"></h5>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-entrada-tornar">Tornar als jugadors</button>
+                <div id="entrada-seccio-intro">
+                    <div class="form-group">
+                        <label for="select-entrada-partit"><strong>Partit</strong></label>
+                        <select id="select-entrada-partit" class="form-control select-jornada"></select>
                     </div>
-                    <div id="entrada-stats" class="entrada-btn-grid"></div>
+                    <div id="entrada-jugadors-wrap">
+                        <p class="text-muted small mb-2">Tria un jugador per anotar estadístiques.</p>
+                        <div id="entrada-jugadors" class="entrada-btn-grid"></div>
+                    </div>
+                    <div id="entrada-stats-wrap" style="display:none;">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0" id="entrada-jugador-nom"></h5>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-entrada-tornar">Tornar als jugadors</button>
+                        </div>
+                        <div id="entrada-stats" class="entrada-btn-grid"></div>
+                    </div>
+                    <p id="entrada-status" class="small text-muted mt-3 mb-0"></p>
                 </div>
-                <p id="entrada-status" class="small text-muted mt-3 mb-0"></p>
+                <div id="entrada-seccio-visu" style="display:none;">
+                    <div class="form-group">
+                        <label for="select-entrada-visu-partit"><strong>Partit</strong></label>
+                        <select id="select-entrada-visu-partit" class="form-control select-jornada"></select>
+                    </div>
+                    <p id="entrada-visu-status" class="text-muted small">Carregant...</p>
+                    <div id="entrada-visu-body"></div>
+                </div>
             </div>
             <div class="tab-pane fade" id="pan-auditories" role="tabpanel">
                 <div class="p-3 d-flex justify-content-between align-items-center">
@@ -156,7 +172,12 @@
     }
 
     var ADMIN_AUDIT_EMAIL = 'albertsinfreu@gmail.com';
+    var ENTRADA_STATS_EMAILS = ['albertsinfreu@gmail.com', 'hector@cadet.com'];
     function isAuditAdmin(user) { return user && user.email === ADMIN_AUDIT_EMAIL; }
+    function canIntroduirStats(user) {
+        var email = (user && user.email) ? String(user.email).toLowerCase() : '';
+        return ENTRADA_STATS_EMAILS.indexOf(email) !== -1;
+    }
 
     function showLogin(show) {
         document.getElementById('login-container').style.display = show ? 'block' : 'none';
@@ -174,16 +195,20 @@
             setLoginError('');
             var auditLi = document.getElementById('nav-item-auditories');
             if (auditLi) auditLi.style.display = isAuditAdmin(user) ? '' : 'none';
+            var entradaLi = document.getElementById('nav-item-entrada');
+            if (entradaLi) entradaLi.style.display = canIntroduirStats(user) ? '' : 'none';
             loadResumFromFirestore();
             loadDetallJornadaFromFirestore();
             loadPerJugadorFromFirestore();
             loadCombinacionsFromFirestore();
             loadTemporadesExtraFromFirestore();
-            initEntradaManual();
+            if (canIntroduirStats(user)) initEntradaManual();
         } else {
             showLogin(true);
             var auditLi = document.getElementById('nav-item-auditories');
             if (auditLi) auditLi.style.display = 'none';
+            var entradaLi = document.getElementById('nav-item-entrada');
+            if (entradaLi) entradaLi.style.display = 'none';
         }
     }
     if (auth) {
@@ -264,8 +289,16 @@
             loadAuditories();
             return;
         }
+        if (paneId === 'pan-entrada') {
+            if (!u || !canIntroduirStats(u)) {
+                e.preventDefault();
+                jQuery('#mainTabs a[href="#pan-resum"]').tab('show');
+                return;
+            }
+            refreshEntradaManualPartits();
+            if (_entradaState.seccio === 'visu') renderEntradaVisualitzacio();
+        }
         if (u) logActivity('tab_view', u, { page: paneId, text: getTabClickText(link) });
-        if (paneId === 'pan-entrada') refreshEntradaManualPartits();
     });
     var tabAudit = document.getElementById('tab-auditories');
     if (tabAudit) tabAudit.addEventListener('click', function() {
@@ -295,8 +328,8 @@
         { key: 'pilotaPerduda', label: 'Pilota perduda' },
         { key: 'assistencia', label: 'Assistència' }
     ];
-    var ENTRADA_ROSTER = ["ANDER ", "FERRAN", "GERARD V", "JAN", "JOEL", "JORDI M", "MARC M", "MARTI", "MAX", "QUIM"];
-    var _entradaState = { partit: null, jugador: null, totals: {}, ready: false };
+    var ENTRADA_ROSTER = ["ANDER ", "FERRAN", "GERARD V", "JAN", "JOEL", "JORDI M", "MARC M", "MARTI", "MAX", "QUIM", "VICTOR"];
+    var _entradaState = { partit: null, jugador: null, totals: {}, ready: false, seccio: 'intro', visuPartit: null, visuTotals: {}, visuReq: 0, editJugador: null };
 
     function emptyManualStats() {
         var o = {};
@@ -405,14 +438,14 @@
         var partit = _entradaState.partit;
         var jugador = _entradaState.jugador;
         if (!db || !partit || !jugador || !statKey) return;
-        if (!auth || !auth.currentUser) {
+        if (!auth || !auth.currentUser || !canIntroduirStats(auth.currentUser)) {
             setEntradaStatus('Cal estar autenticat per guardar.', true);
             return;
         }
         if (!_entradaState.totals[jugador]) _entradaState.totals[jugador] = emptyManualStats();
         var nextVal = Number(_entradaState.totals[jugador][statKey] || 0) + 1;
         _entradaState.totals[jugador][statKey] = nextVal;
-        renderEntradaStatsButtons();
+        renderEntradaJugadors();
         var ref = db.collection('manual_stats').doc(manualStatsDocId(partit));
         var nested = {};
         nested[jugador] = {};
@@ -439,8 +472,218 @@
             setEntradaStatus('Guardat: ' + jugador + ' · ' + label + ' = ' + nextVal);
         }).catch(function(err) {
             _entradaState.totals[jugador][statKey] = Math.max(0, nextVal - 1);
-            renderEntradaStatsButtons();
+            renderEntradaJugadors();
             setEntradaStatus('No s\'ha pogut guardar: ' + (err && (err.message || err.code) || err), true);
+        });
+    }
+    function mostrarEntradaSeccio(seccio) {
+        _entradaState.seccio = seccio === 'visu' ? 'visu' : 'intro';
+        var intro = document.getElementById('entrada-seccio-intro');
+        var visu = document.getElementById('entrada-seccio-visu');
+        var btns = document.getElementById('entrada-seccio-buttons');
+        if (intro) intro.style.display = _entradaState.seccio === 'intro' ? 'block' : 'none';
+        if (visu) visu.style.display = _entradaState.seccio === 'visu' ? 'block' : 'none';
+        if (btns) {
+            btns.querySelectorAll('button[data-seccio]').forEach(function(b) {
+                b.classList.toggle('active', b.getAttribute('data-seccio') === _entradaState.seccio);
+            });
+        }
+        if (_entradaState.seccio === 'visu') renderEntradaVisualitzacio();
+        else refreshEntradaManualPartits();
+    }
+    function setVisuStatus(msg, isError) {
+        var status = document.getElementById('entrada-visu-status');
+        if (!status) return;
+        if (!msg) { status.style.display = 'none'; return; }
+        status.style.display = '';
+        status.className = 'small ' + (isError ? 'text-danger' : 'text-muted');
+        status.textContent = msg;
+    }
+    function setModalEditarStatus(msg, isError) {
+        var status = document.getElementById('modal-editar-stats-status');
+        if (!status) return;
+        status.textContent = msg || '';
+        status.className = 'small mt-2 mb-0 ' + (isError ? 'text-danger' : 'text-muted');
+    }
+    function pintarTaulaVisualitzacio() {
+        var body = document.getElementById('entrada-visu-body');
+        if (!body) return;
+        var partit = _entradaState.visuPartit;
+        if (!partit) {
+            body.innerHTML = '';
+            return;
+        }
+        var saved = _entradaState.visuTotals || {};
+        var noms = jugadorsEntradaPerPartit(partit);
+        Object.keys(saved).forEach(function(nom) {
+            if (noms.indexOf(nom) === -1) noms.push(nom);
+        });
+        noms.sort(function(a, b) { return String(a).localeCompare(String(b), 'ca'); });
+        var head = '<th>Jugador</th>' + MANUAL_STAT_DEFS.map(function(s) {
+            return '<th class="text-center">' + esc(s.label) + '</th>';
+        }).join('');
+        var rows = noms.map(function(nom) {
+            var st = emptyManualStats();
+            var cur = saved[nom] || {};
+            MANUAL_STAT_DEFS.forEach(function(s) { st[s.key] = Number(cur[s.key] || 0); });
+            var cells = MANUAL_STAT_DEFS.map(function(s) {
+                return '<td class="text-center">' + esc(st[s.key]) + '</td>';
+            }).join('');
+            return '<tr><td><div class="entrada-jugador-cell"><span>' + esc(nom) + '</span>'
+                + '<button type="button" class="btn btn-outline-secondary btn-sm btn-editar-stats" data-jugador="' + encodeURIComponent(nom) + '">Editar</button>'
+                + '</div></td>' + cells + '</tr>';
+        }).join('');
+        body.innerHTML = '<div class="table-responsive"><table class="table table-striped table-bordered table-sm mb-0">'
+            + '<thead class="thead-dark"><tr>' + head + '</tr></thead><tbody>'
+            + (rows || '<tr><td colspan="' + (MANUAL_STAT_DEFS.length + 1) + '" class="text-muted">Sense dades.</td></tr>')
+            + '</tbody></table></div>';
+    }
+    function carregarVisuStats(partit) {
+        _entradaState.visuPartit = partit;
+        _entradaState.visuTotals = {};
+        var req = ++_entradaState.visuReq;
+        if (!partit) {
+            setVisuStatus('No hi ha cap partit seleccionat.');
+            pintarTaulaVisualitzacio();
+            return;
+        }
+        if (!db) {
+            setVisuStatus('Firestore no disponible.', true);
+            pintarTaulaVisualitzacio();
+            return;
+        }
+        setVisuStatus('Carregant...');
+        db.collection('manual_stats').doc(manualStatsDocId(partit)).get().then(function(doc) {
+            if (req !== _entradaState.visuReq || _entradaState.seccio !== 'visu') return;
+            var data = (doc && doc.exists) ? (doc.data() || {}) : {};
+            _entradaState.visuTotals = data.jugadors || {};
+            setVisuStatus('');
+            pintarTaulaVisualitzacio();
+        }).catch(function(err) {
+            if (req !== _entradaState.visuReq) return;
+            setVisuStatus('No s\'han pogut carregar les dades: ' + (err && (err.message || err.code) || err), true);
+            pintarTaulaVisualitzacio();
+        });
+    }
+    function renderEntradaVisualitzacio() {
+        var sel = document.getElementById('select-entrada-visu-partit');
+        var body = document.getElementById('entrada-visu-body');
+        var data = window._detallJornadaData || {};
+        var partits = data.partits || [];
+        if (!sel) return;
+        if (!partits.length) {
+            sel.innerHTML = '';
+            _entradaState.visuPartit = null;
+            _entradaState.visuTotals = {};
+            setVisuStatus('No hi ha partits.');
+            if (body) body.innerHTML = '';
+            return;
+        }
+        var prev = _entradaState.visuPartit || sel.value || _entradaState.partit;
+        var lastPartit = data.lastPartit || (partits[0] && partits[0].partit) || '';
+        sel.innerHTML = partits.map(function(p) {
+            return '<option value="' + esc(p.partit) + '">' + esc(p.partit) + '</option>';
+        }).join('');
+        var choose = prev;
+        if (!choose || !partits.some(function(p) { return p.partit === choose; })) choose = lastPartit;
+        if (choose) sel.value = choose;
+        carregarVisuStats(sel.value || '');
+    }
+    function obrirModalEditarStats(jugador) {
+        var partit = _entradaState.visuPartit;
+        if (!jugador || !partit) return;
+        _entradaState.editJugador = jugador;
+        var st = emptyManualStats();
+        var cur = (_entradaState.visuTotals || {})[jugador] || {};
+        MANUAL_STAT_DEFS.forEach(function(s) { st[s.key] = Number(cur[s.key] || 0); });
+        var sub = document.getElementById('modal-editar-stats-subtitol');
+        if (sub) sub.textContent = jugador + ' · ' + partit;
+        var fields = document.getElementById('modal-editar-stats-fields');
+        if (fields) {
+            fields.innerHTML = MANUAL_STAT_DEFS.map(function(s) {
+                return '<div class="form-group mb-2">'
+                    + '<label for="edit-stat-' + s.key + '">' + esc(s.label) + '</label>'
+                    + '<input type="number" min="0" step="1" class="form-control" id="edit-stat-' + s.key + '" data-stat="' + s.key + '" value="' + esc(st[s.key]) + '">'
+                    + '</div>';
+            }).join('');
+        }
+        setModalEditarStatus('');
+        var btn = document.getElementById('btn-guardar-editar-stats');
+        if (btn) btn.disabled = false;
+        jQuery('#modal-editar-stats').modal('show');
+    }
+    function guardarEdicioStats() {
+        var jugador = _entradaState.editJugador;
+        var partit = _entradaState.visuPartit;
+        var btn = document.getElementById('btn-guardar-editar-stats');
+        if (!jugador || !partit) return;
+        if (!db || !auth || !auth.currentUser || !canIntroduirStats(auth.currentUser)) {
+            setModalEditarStatus('Cal estar autenticat per guardar.', true);
+            return;
+        }
+        var next = emptyManualStats();
+        var invalid = false;
+        MANUAL_STAT_DEFS.forEach(function(s) {
+            var inp = document.getElementById('edit-stat-' + s.key);
+            var v = inp ? Number(inp.value) : 0;
+            if (!isFinite(v) || v < 0) invalid = true;
+            else next[s.key] = Math.round(v);
+        });
+        if (invalid) {
+            setModalEditarStatus('Introdueix valors numèrics vàlids (≥ 0).', true);
+            return;
+        }
+        var prev = emptyManualStats();
+        var cur = (_entradaState.visuTotals || {})[jugador] || {};
+        MANUAL_STAT_DEFS.forEach(function(s) { prev[s.key] = Number(cur[s.key] || 0); });
+        var changes = [];
+        MANUAL_STAT_DEFS.forEach(function(s) {
+            if (prev[s.key] !== next[s.key]) {
+                changes.push({ key: s.key, oldV: prev[s.key], next: next[s.key], delta: next[s.key] - prev[s.key] });
+            }
+        });
+        if (!changes.length) {
+            jQuery('#modal-editar-stats').modal('hide');
+            return;
+        }
+        if (btn) btn.disabled = true;
+        setModalEditarStatus('Guardant...');
+        var ref = db.collection('manual_stats').doc(manualStatsDocId(partit));
+        var nested = {};
+        nested[jugador] = {};
+        MANUAL_STAT_DEFS.forEach(function(s) { nested[jugador][s.key] = next[s.key]; });
+        var batch = db.batch();
+        batch.set(ref, {
+            partit: partit,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            jugadors: nested
+        }, { merge: true });
+        changes.forEach(function(ch) {
+            batch.set(ref.collection('events').doc(), {
+                partit: partit,
+                jugador: jugador,
+                stat: ch.key,
+                delta: ch.delta,
+                totalAfter: ch.next,
+                source: 'edit',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                userEmail: (auth.currentUser && auth.currentUser.email) || null,
+                userId: (auth.currentUser && auth.currentUser.uid) || null
+            });
+        });
+        batch.commit().then(function() {
+            if (!_entradaState.visuTotals) _entradaState.visuTotals = {};
+            _entradaState.visuTotals[jugador] = next;
+            if (_entradaState.partit === partit) {
+                if (!_entradaState.totals) _entradaState.totals = {};
+                _entradaState.totals[jugador] = next;
+            }
+            pintarTaulaVisualitzacio();
+            if (btn) btn.disabled = false;
+            jQuery('#modal-editar-stats').modal('hide');
+        }).catch(function(err) {
+            if (btn) btn.disabled = false;
+            setModalEditarStatus('No s\'ha pogut guardar: ' + (err && (err.message || err.code) || err), true);
         });
     }
     function refreshEntradaManualPartits() {
@@ -460,20 +703,44 @@
     }
     function initEntradaManual() {
         if (_entradaState.ready) {
-            refreshEntradaManualPartits();
+            mostrarEntradaSeccio(_entradaState.seccio || 'intro');
             return;
         }
         _entradaState.ready = true;
         var sel = document.getElementById('select-entrada-partit');
+        var selVisu = document.getElementById('select-entrada-visu-partit');
         var btnTornar = document.getElementById('btn-entrada-tornar');
+        var seccioBtns = document.getElementById('entrada-seccio-buttons');
+        var visuBody = document.getElementById('entrada-visu-body');
+        var btnGuardar = document.getElementById('btn-guardar-editar-stats');
         if (sel) sel.addEventListener('change', function() {
             _entradaState.jugador = null;
             carregarManualStats(this.value);
         });
+        if (selVisu) selVisu.addEventListener('change', function() {
+            carregarVisuStats(this.value);
+        });
         if (btnTornar) btnTornar.addEventListener('click', function() {
             renderEntradaJugadors();
         });
-        refreshEntradaManualPartits();
+        if (seccioBtns) {
+            seccioBtns.querySelectorAll('button[data-seccio]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    mostrarEntradaSeccio(this.getAttribute('data-seccio'));
+                });
+            });
+        }
+        if (visuBody) {
+            visuBody.addEventListener('click', function(e) {
+                var btn = e.target.closest('.btn-editar-stats');
+                if (!btn) return;
+                var nom = btn.getAttribute('data-jugador') || '';
+                try { nom = decodeURIComponent(nom); } catch (err) {}
+                if (nom) obrirModalEditarStats(nom);
+            });
+        }
+        if (btnGuardar) btnGuardar.addEventListener('click', guardarEdicioStats);
+        mostrarEntradaSeccio('intro');
     }
 
     function renderMetriquesEquip(eq, opts) {
@@ -618,6 +885,7 @@
         var partits = (data && data.partits) ? data.partits : [];
         window._detallJornadaData = data || {};
         refreshEntradaManualPartits();
+        if (_entradaState.seccio === 'visu') renderEntradaVisualitzacio();
         var lastPartit = (data && data.lastPartit) ? data.lastPartit : (partits[0] && partits[0].partit);
         if (partits.length === 0) { if (status) status.innerHTML = '<span class="text-muted">No hi ha dades de partits.</span>'; return; }
         var opts = partits.map(function(p) { return '<option value="' + esc(p.partit) + '"' + (p.partit === lastPartit ? ' selected' : '') + '>' + esc(p.partit) + '</option>'; }).join('');
@@ -1100,6 +1368,25 @@
         });
     })();
     </script>
+    <div class="modal fade" id="modal-editar-stats" tabindex="-1" role="dialog" aria-labelledby="modal-editar-stats-titol" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modal-editar-stats-titol">Editar dades</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Tancar"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <p id="modal-editar-stats-subtitol" class="text-muted small"></p>
+                    <div id="modal-editar-stats-fields"></div>
+                    <p id="modal-editar-stats-status" class="small mt-2 mb-0"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel·lar</button>
+                    <button type="button" class="btn btn-primary" id="btn-guardar-editar-stats">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
     
