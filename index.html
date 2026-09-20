@@ -29,6 +29,13 @@
         th.sortable { cursor: pointer; user-select: none; }
         th.sortable .sort-icon { display: inline-block; width: 0.8em; text-align: center; font-size: 0.8em; opacity: 0.8; }
         th.sortable:hover { background-color: #495057; }
+        .entrada-btn-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+        .btn-entrada-jugador, .btn-entrada-stat { min-height: 56px; font-weight: 600; white-space: normal; }
+        .btn-entrada-stat .entrada-stat-count { display: block; font-size: 1.35rem; line-height: 1.1; }
+        .btn-entrada-stat:disabled { opacity: 0.65; }
+        @media (min-width: 576px) {
+            .entrada-btn-grid { grid-template-columns: repeat(3, 1fr); }
+        }
         @media (max-width: 576px) {
             body { font-size: 13px; }
             .container { padding: 10px; }
@@ -66,6 +73,7 @@
             <li class="nav-item"><a class="nav-link" id="tab-ultima" data-toggle="tab" href="#pan-ultima" role="tab">Detall jornada</a></li>
             <li class="nav-item"><a class="nav-link" id="tab-detall" data-toggle="tab" href="#pan-detall" role="tab">Per jugador</a></li>
             <li class="nav-item"><a class="nav-link" id="tab-combinacions" data-toggle="tab" href="#pan-combinacions" role="tab">Combinacions</a></li>
+            <li class="nav-item"><a class="nav-link" id="tab-entrada" data-toggle="tab" href="#pan-entrada" role="tab">Introduir stats</a></li>
             <li class="nav-item" id="nav-item-auditories" style="display:none"><a class="nav-link" id="tab-auditories" data-toggle="tab" href="#pan-auditories" role="tab">Auditories usuari</a></li>
             <li class="nav-item"><a class="nav-link" id="tab-24-25" data-toggle="tab" href="#pan-24-25" role="tab">Temporada 24-25</a></li><li class="nav-item"><a class="nav-link" id="tab-25-26" data-toggle="tab" href="#pan-25-26" role="tab">Temporada 25-26</a></li>
         </ul>
@@ -75,6 +83,24 @@
             <div class="tab-pane fade" id="pan-ultima" role="tabpanel"><div id="detall-jornada-content"><div class="detall-jornada-status text-muted">Carregant dades des de Firestore...</div><div class="detall-jornada-body"></div></div></div>
             <div class="tab-pane fade" id="pan-detall" role="tabpanel"><div id="per-jugador-content"><div class="per-jugador-status text-muted">Carregant dades des de Firestore...</div><div class="per-jugador-body"></div></div></div>
             <div class="tab-pane fade" id="pan-combinacions" role="tabpanel"><div id="combinacions-content"><div class="combinacions-status text-muted">Carregant dades des de Firestore...</div><div class="combinacions-body"></div></div></div>
+            <div class="tab-pane fade" id="pan-entrada" role="tabpanel">
+                <div class="form-group">
+                    <label for="select-entrada-partit"><strong>Partit</strong></label>
+                    <select id="select-entrada-partit" class="form-control select-jornada"></select>
+                </div>
+                <div id="entrada-jugadors-wrap">
+                    <p class="text-muted small mb-2">Tria un jugador per anotar estadístiques.</p>
+                    <div id="entrada-jugadors" class="entrada-btn-grid"></div>
+                </div>
+                <div id="entrada-stats-wrap" style="display:none;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0" id="entrada-jugador-nom"></h5>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-entrada-tornar">Tornar als jugadors</button>
+                    </div>
+                    <div id="entrada-stats" class="entrada-btn-grid"></div>
+                </div>
+                <p id="entrada-status" class="small text-muted mt-3 mb-0"></p>
+            </div>
             <div class="tab-pane fade" id="pan-auditories" role="tabpanel">
                 <div class="p-3 d-flex justify-content-between align-items-center">
                     <div>
@@ -153,6 +179,7 @@
             loadPerJugadorFromFirestore();
             loadCombinacionsFromFirestore();
             loadTemporadesExtraFromFirestore();
+            initEntradaManual();
         } else {
             showLogin(true);
             var auditLi = document.getElementById('nav-item-auditories');
@@ -238,6 +265,7 @@
             return;
         }
         if (u) logActivity('tab_view', u, { page: paneId, text: getTabClickText(link) });
+        if (paneId === 'pan-entrada') refreshEntradaManualPartits();
     });
     var tabAudit = document.getElementById('tab-auditories');
     if (tabAudit) tabAudit.addEventListener('click', function() {
@@ -257,6 +285,196 @@
     }
 
     function esc(s) { if (s == null || s === undefined) return ''; var d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; }
+
+    var MANUAL_STAT_DEFS = [
+        { key: 'rebotsDefensius', label: 'Rebot defensiu' },
+        { key: 'rebotConcedit', label: 'Rebot concedit' },
+        { key: 'rebotOfensiu', label: 'Rebot ofensiu' },
+        { key: 'tap', label: 'Tap' },
+        { key: 'pilotaRecuperada', label: 'Pilota recuperada' },
+        { key: 'pilotaPerduda', label: 'Pilota perduda' },
+        { key: 'assistencia', label: 'Assistència' }
+    ];
+    var ENTRADA_ROSTER = ["ANDER ", "FERRAN", "GERARD V", "JAN", "JOEL", "JORDI M", "MARC M", "MARTI", "MAX", "QUIM"];
+    var _entradaState = { partit: null, jugador: null, totals: {}, ready: false };
+
+    function emptyManualStats() {
+        var o = {};
+        MANUAL_STAT_DEFS.forEach(function(s) { o[s.key] = 0; });
+        return o;
+    }
+    function manualStatsDocId(partit) {
+        return encodeURIComponent(String(partit || '')).replace(/%/g, '_');
+    }
+    function statsForJugador(nom) {
+        var cur = _entradaState.totals[nom];
+        if (!cur) return emptyManualStats();
+        var o = emptyManualStats();
+        MANUAL_STAT_DEFS.forEach(function(s) { o[s.key] = Number(cur[s.key] || 0); });
+        return o;
+    }
+    function setEntradaStatus(msg, isError) {
+        var el = document.getElementById('entrada-status');
+        if (!el) return;
+        el.textContent = msg || '';
+        el.className = 'small mt-3 mb-0 ' + (isError ? 'text-danger' : 'text-muted');
+    }
+    function jugadorsEntradaPerPartit(partit) {
+        var data = window._detallJornadaData || {};
+        var partits = data.partits || [];
+        var found = null;
+        for (var i = 0; i < partits.length; i++) {
+            if (partits[i].partit === partit) { found = partits[i]; break; }
+        }
+        var noms = [];
+        if (found && found.rows && found.rows.length) {
+            found.rows.forEach(function(r) { if (r && r.nom && noms.indexOf(r.nom) === -1) noms.push(r.nom); });
+        }
+        if (!noms.length) noms = (ENTRADA_ROSTER || []).slice();
+        noms.sort(function(a, b) { return String(a).localeCompare(String(b), 'ca'); });
+        return noms;
+    }
+    function renderEntradaJugadors() {
+        var wrapJ = document.getElementById('entrada-jugadors-wrap');
+        var wrapS = document.getElementById('entrada-stats-wrap');
+        var grid = document.getElementById('entrada-jugadors');
+        if (!grid) return;
+        var partit = (_entradaState.partit || '').trim();
+        if (wrapJ) wrapJ.style.display = 'block';
+        if (wrapS) wrapS.style.display = 'none';
+        _entradaState.jugador = null;
+        if (!partit) {
+            grid.innerHTML = '<p class="text-muted mb-0">No hi ha cap partit seleccionat.</p>';
+            return;
+        }
+        var noms = jugadorsEntradaPerPartit(partit);
+        grid.innerHTML = noms.map(function(nom) {
+            return '<button type="button" class="btn btn-outline-primary btn-entrada-jugador" data-jugador="' + esc(nom) + '">' + esc(nom) + '</button>';
+        }).join('');
+        grid.querySelectorAll('button[data-jugador]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                mostrarEntradaStats(this.getAttribute('data-jugador'));
+            });
+        });
+    }
+    function renderEntradaStatsButtons() {
+        var grid = document.getElementById('entrada-stats');
+        if (!grid || !_entradaState.jugador) return;
+        var st = statsForJugador(_entradaState.jugador);
+        grid.innerHTML = MANUAL_STAT_DEFS.map(function(s) {
+            return '<button type="button" class="btn btn-primary btn-entrada-stat" data-stat="' + s.key + '">'
+                + '<span class="entrada-stat-count">' + esc(st[s.key]) + '</span>'
+                + '<span>' + esc(s.label) + '</span></button>';
+        }).join('');
+        grid.querySelectorAll('button[data-stat]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                incrementEntradaStat(this.getAttribute('data-stat'));
+            });
+        });
+    }
+    function mostrarEntradaStats(nom) {
+        _entradaState.jugador = nom;
+        var wrapJ = document.getElementById('entrada-jugadors-wrap');
+        var wrapS = document.getElementById('entrada-stats-wrap');
+        var titol = document.getElementById('entrada-jugador-nom');
+        if (wrapJ) wrapJ.style.display = 'none';
+        if (wrapS) wrapS.style.display = 'block';
+        if (titol) titol.textContent = nom;
+        renderEntradaStatsButtons();
+    }
+    function carregarManualStats(partit) {
+        _entradaState.partit = partit;
+        _entradaState.totals = {};
+        if (!db || !partit) {
+            renderEntradaJugadors();
+            return;
+        }
+        setEntradaStatus('Carregant dades d\'aquest partit...');
+        db.collection('manual_stats').doc(manualStatsDocId(partit)).get().then(function(doc) {
+            var data = (doc && doc.exists) ? (doc.data() || {}) : {};
+            _entradaState.totals = data.jugadors || {};
+            setEntradaStatus('');
+            if (_entradaState.jugador) renderEntradaStatsButtons();
+            else renderEntradaJugadors();
+        }).catch(function(err) {
+            setEntradaStatus('No s\'han pogut carregar les dades: ' + (err && (err.message || err.code) || err), true);
+            renderEntradaJugadors();
+        });
+    }
+    function incrementEntradaStat(statKey) {
+        var partit = _entradaState.partit;
+        var jugador = _entradaState.jugador;
+        if (!db || !partit || !jugador || !statKey) return;
+        if (!auth || !auth.currentUser) {
+            setEntradaStatus('Cal estar autenticat per guardar.', true);
+            return;
+        }
+        if (!_entradaState.totals[jugador]) _entradaState.totals[jugador] = emptyManualStats();
+        var nextVal = Number(_entradaState.totals[jugador][statKey] || 0) + 1;
+        _entradaState.totals[jugador][statKey] = nextVal;
+        renderEntradaStatsButtons();
+        var ref = db.collection('manual_stats').doc(manualStatsDocId(partit));
+        var nested = {};
+        nested[jugador] = {};
+        nested[jugador][statKey] = firebase.firestore.FieldValue.increment(1);
+        var batch = db.batch();
+        batch.set(ref, {
+            partit: partit,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            jugadors: nested
+        }, { merge: true });
+        batch.set(ref.collection('events').doc(), {
+            partit: partit,
+            jugador: jugador,
+            stat: statKey,
+            delta: 1,
+            totalAfter: nextVal,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            userEmail: (auth.currentUser && auth.currentUser.email) || null,
+            userId: (auth.currentUser && auth.currentUser.uid) || null
+        });
+        batch.commit().then(function() {
+            var def = MANUAL_STAT_DEFS.filter(function(s) { return s.key === statKey; })[0];
+            var label = def ? def.label : statKey;
+            setEntradaStatus('Guardat: ' + jugador + ' · ' + label + ' = ' + nextVal);
+        }).catch(function(err) {
+            _entradaState.totals[jugador][statKey] = Math.max(0, nextVal - 1);
+            renderEntradaStatsButtons();
+            setEntradaStatus('No s\'ha pogut guardar: ' + (err && (err.message || err.code) || err), true);
+        });
+    }
+    function refreshEntradaManualPartits() {
+        var sel = document.getElementById('select-entrada-partit');
+        if (!sel) return;
+        var data = window._detallJornadaData || {};
+        var partits = data.partits || [];
+        var prev = sel.value;
+        var lastPartit = data.lastPartit || (partits[0] && partits[0].partit) || '';
+        sel.innerHTML = partits.map(function(p) {
+            return '<option value="' + esc(p.partit) + '">' + esc(p.partit) + '</option>';
+        }).join('');
+        var choose = prev;
+        if (!choose || !partits.some(function(p) { return p.partit === choose; })) choose = lastPartit;
+        if (choose) sel.value = choose;
+        carregarManualStats(sel.value || '');
+    }
+    function initEntradaManual() {
+        if (_entradaState.ready) {
+            refreshEntradaManualPartits();
+            return;
+        }
+        _entradaState.ready = true;
+        var sel = document.getElementById('select-entrada-partit');
+        var btnTornar = document.getElementById('btn-entrada-tornar');
+        if (sel) sel.addEventListener('change', function() {
+            _entradaState.jugador = null;
+            carregarManualStats(this.value);
+        });
+        if (btnTornar) btnTornar.addEventListener('click', function() {
+            renderEntradaJugadors();
+        });
+        refreshEntradaManualPartits();
+    }
 
     function renderMetriquesEquip(eq, opts) {
         eq = eq || {};
@@ -398,6 +616,8 @@
         var body = wrap.querySelector('.detall-jornada-body');
         if (!body) return;
         var partits = (data && data.partits) ? data.partits : [];
+        window._detallJornadaData = data || {};
+        refreshEntradaManualPartits();
         var lastPartit = (data && data.lastPartit) ? data.lastPartit : (partits[0] && partits[0].partit);
         if (partits.length === 0) { if (status) status.innerHTML = '<span class="text-muted">No hi ha dades de partits.</span>'; return; }
         var opts = partits.map(function(p) { return '<option value="' + esc(p.partit) + '"' + (p.partit === lastPartit ? ' selected' : '') + '>' + esc(p.partit) + '</option>'; }).join('');
