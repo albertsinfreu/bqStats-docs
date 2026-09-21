@@ -197,12 +197,14 @@
             if (auditLi) auditLi.style.display = isAuditAdmin(user) ? '' : 'none';
             var entradaLi = document.getElementById('nav-item-entrada');
             if (entradaLi) entradaLi.style.display = canIntroduirStats(user) ? '' : 'none';
-            loadResumFromFirestore();
-            loadDetallJornadaFromFirestore();
-            loadPerJugadorFromFirestore();
-            loadCombinacionsFromFirestore();
-            loadTemporadesExtraFromFirestore();
-            if (canIntroduirStats(user)) initEntradaManual();
+            loadManualStatsCache().then(function() {
+                loadResumFromFirestore();
+                loadDetallJornadaFromFirestore();
+                loadPerJugadorFromFirestore();
+                loadCombinacionsFromFirestore();
+                loadTemporadesExtraFromFirestore();
+                if (canIntroduirStats(user)) initEntradaManual();
+            });
         } else {
             showLogin(true);
             var auditLi = document.getElementById('nav-item-auditories');
@@ -335,6 +337,96 @@
         var o = {};
         MANUAL_STAT_DEFS.forEach(function(s) { o[s.key] = 0; });
         return o;
+    }
+    var _manualStatsByPartit = {};
+    var _manualStatsReady = false;
+    var _manualStatsReq = 0;
+    function manualStatHeadersHtml() {
+        return MANUAL_STAT_DEFS.map(function(s) {
+            return '<th class="text-center sortable">' + esc(s.label) + ' <span class="sort-icon"></span></th>';
+        }).join('');
+    }
+    function manualStatCellsHtml(st) {
+        st = st || emptyManualStats();
+        return MANUAL_STAT_DEFS.map(function(s) {
+            return '<td class="text-center">' + esc(Number(st[s.key] || 0)) + '</td>';
+        }).join('');
+    }
+    function valExtes(baseVal, st) {
+        st = st || emptyManualStats();
+        return Number(baseVal || 0)
+            + Number(st.rebotsDefensius || 0)
+            + Number(st.rebotOfensiu || 0)
+            + Number(st.tap || 0)
+            + Number(st.pilotaRecuperada || 0)
+            + Number(st.assistencia || 0)
+            - Number(st.pilotaPerduda || 0);
+    }
+    function statsManualsPerPartitJugador(partit, nom) {
+        var saved = ((_manualStatsByPartit[partit] || {})[nom]) || {};
+        var st = emptyManualStats();
+        MANUAL_STAT_DEFS.forEach(function(s) { st[s.key] = Number(saved[s.key] || 0); });
+        return st;
+    }
+    function acumularStatsManuals(partitNoms) {
+        var byJugador = {};
+        (partitNoms || []).forEach(function(partit) {
+            var saved = _manualStatsByPartit[partit] || {};
+            Object.keys(saved).forEach(function(nom) {
+                if (!byJugador[nom]) byJugador[nom] = emptyManualStats();
+                var cur = saved[nom] || {};
+                MANUAL_STAT_DEFS.forEach(function(s) {
+                    byJugador[nom][s.key] += Number(cur[s.key] || 0);
+                });
+            });
+        });
+        return byJugador;
+    }
+    function partitsManualsPerFase(fase) {
+        var partits = (window._detallJornadaData && window._detallJornadaData.partits) || [];
+        if (!fase || fase === 'total') {
+            if (partits.length) return partits.map(function(p) { return p.partit; });
+            return Object.keys(_manualStatsByPartit);
+        }
+        var n = fase === 'fase1' ? 1 : (fase === 'fase2' ? 2 : (fase === 'fase3' ? 3 : null));
+        return partits.filter(function(p) {
+            if (n == null) return true;
+            if (p.fase == null || p.fase === undefined) return false;
+            return Number(p.fase) === n;
+        }).map(function(p) { return p.partit; });
+    }
+    function loadManualStatsCache(force) {
+        if (!db) return Promise.resolve();
+        if (_manualStatsReady && !force) return Promise.resolve();
+        var req = ++_manualStatsReq;
+        return db.collection('manual_stats').get().then(function(snap) {
+            if (req !== _manualStatsReq) return;
+            var byPartit = {};
+            snap.forEach(function(doc) {
+                var d = doc.data() || {};
+                if (d.partit) byPartit[d.partit] = d.jugadors || {};
+            });
+            _manualStatsByPartit = byPartit;
+            _manualStatsReady = true;
+        }).catch(function() {
+            if (req !== _manualStatsReq) return;
+            _manualStatsByPartit = {};
+            _manualStatsReady = true;
+        });
+    }
+    function patchManualStatsCache(partit, jugador, st) {
+        if (!partit || !jugador) return;
+        if (!_manualStatsByPartit[partit]) _manualStatsByPartit[partit] = {};
+        _manualStatsByPartit[partit][jugador] = st;
+        _manualStatsReady = true;
+        refreshManualStatsViews();
+    }
+    function refreshManualStatsViews() {
+        window._refreshingManualViews = true;
+        if (window._resumData) renderResumFromFirestore(window._resumData, window._resumFaseActiva || 'total');
+        if (window._detallJornadaData) renderDetallJornada(window._detallJornadaData);
+        if (window._perJugadorData) renderPerJugador(window._perJugadorData);
+        window._refreshingManualViews = false;
     }
     function manualStatsDocId(partit) {
         return encodeURIComponent(String(partit || '')).replace(/%/g, '_');
@@ -470,6 +562,10 @@
             var def = MANUAL_STAT_DEFS.filter(function(s) { return s.key === statKey; })[0];
             var label = def ? def.label : statKey;
             setEntradaStatus('Guardat: ' + jugador + ' · ' + label + ' = ' + nextVal);
+            var st = emptyManualStats();
+            var cur = _entradaState.totals[jugador] || {};
+            MANUAL_STAT_DEFS.forEach(function(s) { st[s.key] = Number(cur[s.key] || 0); });
+            patchManualStatsCache(partit, jugador, st);
         }).catch(function(err) {
             _entradaState.totals[jugador][statKey] = Math.max(0, nextVal - 1);
             renderEntradaJugadors();
@@ -681,6 +777,7 @@
             pintarTaulaVisualitzacio();
             if (btn) btn.disabled = false;
             jQuery('#modal-editar-stats').modal('hide');
+            patchManualStatsCache(partit, jugador, next);
         }).catch(function(err) {
             if (btn) btn.disabled = false;
             setModalEditarStatus('No s\'ha pogut guardar: ' + (err && (err.message || err.code) || err), true);
@@ -787,7 +884,8 @@
               + '<li><strong>Salts inicials guanyats %</strong> = (Salts guanyats ÷ Total salts inicials) × 100</li>'
               + '<li><strong>Faltes comeses/partit</strong> = Total faltes comeses ÷ Nombre de partits</li>'
               + '<li><strong>Faltes rebudes/partit</strong> = Total faltes rebudes ÷ Nombre de partits</li>'
-              + '<li><strong>VAL (valoració)</strong> = Punts anotats − Faltes comeses − Tirs lliures fallats</li>'
+              + '<li><strong>VAL (valoració)</strong> = Punts anotats − Faltes comeses − Tirs lliures fallats (dades de la web)</li>'
+              + '<li><strong>VAL-extès</strong> (fórmula ACB/FIBA amb les dades disponibles) = Punts + Rebots + Assistències + Recuperacions + Taps − Tirs lliures fallats − Pèrdues − Faltes comeses. Rebots, taps, recuperacions, pèrdues i assistències venen de Stats Manuals; punts, faltes comeses i TL fallats, de la web. No es resten tirs de camp fallats (no n\'hi ha captura). Faltes rebudes i taps rebuts tampoc (no n\'hi ha per jugador).</li>'
               + '</ul>';
         }
         h += '</div></div>';
@@ -815,17 +913,21 @@
         if (fase === 'fase1') titolCard = (nomTemporada ? nomTemporada + ' ' : '') + '(Fase 1)';
         else if (fase === 'fase2') titolCard = (nomTemporada ? nomTemporada + ' ' : '') + '(Fase 2)';
         else if (fase === 'fase3') titolCard = (nomTemporada ? nomTemporada + ' ' : '') + '(Fase 3)';
+        window._resumFaseActiva = fase || 'total';
         var metricsHtml = renderMetriquesEquip(eq, { titol: titolCard, showLlegenda: true });
         metricsEl.innerHTML = metricsHtml;
 
         var jugadors = (data && data.jugadors) ? data.jugadors : [];
+        var manualsByNom = acumularStatsManuals(partitsManualsPerFase(fase || 'total'));
         var rows = '';
         for (var i = 0; i < jugadors.length; i++) {
             var j = jugadors[i] || {};
+            var ms = manualsByNom[j.nom] || emptyManualStats();
             rows += '<tr>'
               + '<td>' + esc(j.nom) + '</td>'
               + '<td class="text-center">' + esc(j.totalPlusminus) + '</td>'
               + '<td class="text-center">' + esc(j.totalVal) + '</td>'
+              + '<td class="text-center">' + esc(valExtes(j.totalVal, ms)) + '</td>'
               + '<td class="text-center">' + esc(j.totalMinuts) + '</td>'
               + '<td class="text-center">' + esc(j.partitsJugats) + '</td>'
               + '<td class="text-center">' + esc(j.partitsTitular) + '</td>'
@@ -834,6 +936,7 @@
               + '<td class="text-center">' + esc(j.foulsPerMinut) + '</td>'
               + '<td class="text-center">' + esc(fmtPct(j.ftPct)) + '</td>'
               + '<td class="text-center">' + esc(j.totalPoints) + '</td>'
+              + manualStatCellsHtml(ms)
               + '</tr>';
         }
         tableEl.innerHTML =
@@ -843,6 +946,7 @@
           + '<th class="sortable">Jugador <span class="sort-icon"></span></th>'
           + '<th class="text-center sortable">+/- <span class="sort-icon"></span></th>'
           + '<th class="text-center sortable">VAL <span class="sort-icon"></span></th>'
+          + '<th class="text-center sortable">VAL-extès <span class="sort-icon"></span></th>'
           + '<th class="text-center sortable">Minuts <span class="sort-icon"></span></th>'
           + '<th class="text-center sortable">Partits jugats <span class="sort-icon"></span></th>'
           + '<th class="text-center sortable">Partits titular <span class="sort-icon"></span></th>'
@@ -851,6 +955,7 @@
           + '<th class="text-center sortable">Faltes/min <span class="sort-icon"></span></th>'
           + '<th class="text-center sortable">TL% <span class="sort-icon"></span></th>'
           + '<th class="text-center sortable">Punts <span class="sort-icon"></span></th>'
+          + manualStatHeadersHtml()
           + '</tr></thead>'
           + '<tbody>' + rows + '</tbody></table></div>';
 
@@ -870,7 +975,7 @@
                 return;
             }
             window._resumData = doc.data();
-            renderResumFromFirestore(window._resumData, 'total');
+            renderResumFromFirestore(window._resumData, window._resumFaseActiva || 'total');
         }).catch(function(err) {
             if (statusEl) statusEl.innerHTML = '<span class="text-danger">Error llegint Firestore: ' + esc(err && (err.message || err.code) || err) + '</span>';
         });
@@ -883,15 +988,23 @@
         var body = wrap.querySelector('.detall-jornada-body');
         if (!body) return;
         var partits = (data && data.partits) ? data.partits : [];
+        var prevSel = (document.getElementById('select-jornada') || {}).value;
         window._detallJornadaData = data || {};
+        if (window._resumData && !window._refreshingManualViews) {
+            renderResumFromFirestore(window._resumData, window._resumFaseActiva || 'total');
+        }
         refreshEntradaManualPartits();
         if (_entradaState.seccio === 'visu') renderEntradaVisualitzacio();
-        var lastPartit = (data && data.lastPartit) ? data.lastPartit : (partits[0] && partits[0].partit);
+        var lastPartit = prevSel || ((data && data.lastPartit) ? data.lastPartit : (partits[0] && partits[0].partit));
+        if (lastPartit && partits.length && !partits.some(function(p) { return p.partit === lastPartit; })) {
+            lastPartit = (data && data.lastPartit) ? data.lastPartit : (partits[0] && partits[0].partit);
+        }
         if (partits.length === 0) { if (status) status.innerHTML = '<span class="text-muted">No hi ha dades de partits.</span>'; return; }
         var opts = partits.map(function(p) { return '<option value="' + esc(p.partit) + '"' + (p.partit === lastPartit ? ' selected' : '') + '>' + esc(p.partit) + '</option>'; }).join('');
         var blocks = partits.map(function(p) {
             var rowsHtml = (p.rows || []).map(function(r) {
-                return '<tr><td>' + esc(r.nom) + '</td><td>' + esc(r.pm) + '</td><td>' + esc(r.val) + '</td><td>' + esc(r.mn) + '</td><td>' + esc(r.mq1) + '</td><td>' + esc(r.mq2) + '</td><td>' + esc(r.mq3) + '</td><td>' + esc(r.mq4) + '</td><td>' + esc(r.mot) + '</td><td>' + esc(r.fl) + '</td><td>' + esc(r.f_per_min) + '</td><td>' + esc(r.pt) + '</td></tr>';
+                var st = statsManualsPerPartitJugador(p.partit, r.nom);
+                return '<tr><td>' + esc(r.nom) + '</td><td>' + esc(r.pm) + '</td><td>' + esc(r.val) + '</td><td>' + esc(valExtes(r.val, st)) + '</td><td>' + esc(r.mn) + '</td><td>' + esc(r.mq1) + '</td><td>' + esc(r.mq2) + '</td><td>' + esc(r.mq3) + '</td><td>' + esc(r.mq4) + '</td><td>' + esc(r.mot) + '</td><td>' + esc(r.fl) + '</td><td>' + esc(r.f_per_min) + '</td><td>' + esc(r.pt) + '</td>' + manualStatCellsHtml(st) + '</tr>';
             }).join('');
             var eq = (p && p.equips) ? p.equips : {};
             var metricsHtml = renderMetriquesEquip(eq, { titol: "d\'aquest partit", isPartit: true });
@@ -903,7 +1016,7 @@
                 return '<div class="mt-4"><h6>Top 5 combinacions de 5 jugadors (millor +/-) - ' + esc(q.quart) + '</h6><div class="table-responsive"><table class="table table-striped table-bordered table-sm mb-3"><thead class="thead-dark"><tr><th>Combinació</th><th class="text-center">+/-</th><th class="text-center">Minuts</th><th class="text-center">Quart(s)</th></tr></thead><tbody>' + qTop5 + '</tbody></table></div><h6>Top 5 combinacions de 5 jugadors (pitjor +/-) - ' + esc(q.quart) + '</h6><div class="table-responsive"><table class="table table-striped table-bordered table-sm mb-0"><thead class="thead-dark"><tr><th>Combinació</th><th class="text-center">+/-</th><th class="text-center">Minuts</th><th class="text-center">Quart(s)</th></tr></thead><tbody>' + qBottom5 + '</tbody></table></div></div>';
             }).join('');
             var topBlock = (top5 || bottom5 || topPerQuart) ? '<div class="mt-3">' + (top5 ? '<h6>Top 5 combinacions de 5 jugadors (millor +/-)</h6><div class="table-responsive"><table class="table table-striped table-bordered table-sm mb-3"><thead class="thead-dark"><tr><th>Combinació</th><th class="text-center">+/-</th><th class="text-center">Minuts</th><th class="text-center">Quart(s)</th></tr></thead><tbody>' + top5 + '</tbody></table></div>' : '') + (bottom5 ? '<h6>Top 5 combinacions de 5 jugadors (pitjor +/-)</h6><div class="table-responsive"><table class="table table-striped table-bordered table-sm mb-0"><thead class="thead-dark"><tr><th>Combinació</th><th class="text-center">+/-</th><th class="text-center">Minuts</th><th class="text-center">Quart(s)</th></tr></thead><tbody>' + bottom5 + '</tbody></table></div>' : '') + topPerQuart + '</div>' : '';
-            return '<div class="partit-detail" data-partit="' + esc(p.partit) + '" style="display:' + (p.partit === lastPartit ? 'block' : 'none') + ';"><p class="text-muted mb-2"><strong>' + esc(p.partit) + '</strong>' + esc(p.resultatTxt || '') + '</p>' + metricsHtml + '<div class="table-responsive"><table class="table table-striped table-bordered table-sm taula-top-sortable"><thead class="thead-dark"><tr><th class="sortable">Jugador <span class="sort-icon"></span></th><th class="text-center sortable">+/- <span class="sort-icon"></span></th><th class="text-center sortable">VAL <span class="sort-icon"></span></th><th class="text-center sortable">Min <span class="sort-icon"></span></th><th class="text-center sortable">Min.1Q <span class="sort-icon"></span></th><th class="text-center sortable">Min.2Q <span class="sort-icon"></span></th><th class="text-center sortable">Min.3Q <span class="sort-icon"></span></th><th class="text-center sortable">Min.4Q <span class="sort-icon"></span></th><th class="text-center sortable">Min.OT <span class="sort-icon"></span></th><th class="text-center sortable">Faltes <span class="sort-icon"></span></th><th class="text-center sortable">Faltes/min <span class="sort-icon"></span></th><th class="text-center sortable">Punts <span class="sort-icon"></span></th></tr></thead><tbody>' + rowsHtml + '</tbody></table></div>' + topBlock + '</div>';
+            return '<div class="partit-detail" data-partit="' + esc(p.partit) + '" style="display:' + (p.partit === lastPartit ? 'block' : 'none') + ';"><p class="text-muted mb-2"><strong>' + esc(p.partit) + '</strong>' + esc(p.resultatTxt || '') + '</p>' + metricsHtml + '<div class="table-responsive"><table class="table table-striped table-bordered table-sm taula-top-sortable"><thead class="thead-dark"><tr><th class="sortable">Jugador <span class="sort-icon"></span></th><th class="text-center sortable">+/- <span class="sort-icon"></span></th><th class="text-center sortable">VAL <span class="sort-icon"></span></th><th class="text-center sortable">VAL-extès <span class="sort-icon"></span></th><th class="text-center sortable">Min <span class="sort-icon"></span></th><th class="text-center sortable">Min.1Q <span class="sort-icon"></span></th><th class="text-center sortable">Min.2Q <span class="sort-icon"></span></th><th class="text-center sortable">Min.3Q <span class="sort-icon"></span></th><th class="text-center sortable">Min.4Q <span class="sort-icon"></span></th><th class="text-center sortable">Min.OT <span class="sort-icon"></span></th><th class="text-center sortable">Faltes <span class="sort-icon"></span></th><th class="text-center sortable">Faltes/min <span class="sort-icon"></span></th><th class="text-center sortable">Punts <span class="sort-icon"></span></th>' + manualStatHeadersHtml() + '</tr></thead><tbody>' + rowsHtml + '</tbody></table></div>' + topBlock + '</div>';
         }).join('');
         body.innerHTML = '<div class="form-group"><label for="select-jornada">Partit:</label><select id="select-jornada" class="form-control form-control-sm select-jornada">' + opts + '</select></div><div id="contenidor-partit">' + blocks + '</div>';
         if (status) status.style.display = 'none';
@@ -931,19 +1044,30 @@
         var status = wrap.querySelector('.per-jugador-status');
         var body = wrap.querySelector('.per-jugador-body');
         if (!body) return;
+        window._perJugadorData = data || {};
         var jugadors = (data && data.jugadors) ? data.jugadors : [];
         function fmtPct(v) { return (v == null) ? '—' : (v + '%'); }
         var html = '';
         for (var i = 0; i < jugadors.length; i++) {
             var j = jugadors[i] || {};
             var nomId = (j.nom || '').replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '');
+            var partitNoms = (j.partits || []).map(function(x) { return x.partit; });
+            var totM = acumularStatsManuals(partitNoms)[j.nom] || emptyManualStats();
             var rowsPm = (j.partits || []).map(function(x) { return '<tr><td>' + esc(x.partit) + '</td><td>' + esc(x.plusminus) + '</td></tr>'; }).join('');
             var rowsMin = (j.partits || []).map(function(x) { return '<tr><td>' + esc(x.partit) + '</td><td>' + esc(x.minuts) + '</td></tr>'; }).join('');
             var rowsF = (j.partits || []).map(function(x) { return '<tr><td>' + esc(x.partit) + '</td><td>' + esc(x.fouls) + '</td></tr>'; }).join('');
             var rowsPt = (j.partits || []).map(function(x) { return '<tr><td>' + esc(x.partit) + '</td><td>' + esc(x.points) + '</td></tr>'; }).join('');
             var rowsVal = (j.partits || []).map(function(x) { return '<tr><td>' + esc(x.partit) + '</td><td>' + esc(x.val) + '</td></tr>'; }).join('');
+            var rowsValExt = (j.partits || []).map(function(x) {
+                return '<tr><td>' + esc(x.partit) + '</td><td>' + esc(valExtes(x.val, statsManualsPerPartitJugador(x.partit, j.nom))) + '</td></tr>';
+            }).join('');
+            var rowsMan = (j.partits || []).map(function(x) {
+                var st = statsManualsPerPartitJugador(x.partit, j.nom);
+                return '<tr><td>' + esc(x.partit) + '</td>' + manualStatCellsHtml(st) + '</tr>';
+            }).join('');
             html += '<div class="card mb-3"><div class="card-header bg-light d-flex justify-content-between align-items-center"><strong>' + esc(j.nom) + '</strong><span class="badge badge-secondary">Totals</span></div><div class="card-body"><div class="row mb-3">';
             html += '<div class="col-6 col-md-2"><div class="p-2 bg-light rounded text-center"><strong>VAL</strong><br>' + esc(j.totalVal) + '</div></div>';
+            html += '<div class="col-6 col-md-2"><div class="p-2 bg-light rounded text-center"><strong>VAL-extès</strong><br>' + esc(valExtes(j.totalVal, totM)) + '</div></div>';
             html += '<div class="col-6 col-md-2"><div class="p-2 bg-light rounded text-center"><strong>+/-</strong><br>' + esc(j.totalPlusminus) + '</div></div>';
             html += '<div class="col-6 col-md-2"><div class="p-2 bg-light rounded text-center"><strong>Minuts</strong><br>' + esc(j.totalMinuts) + '</div></div>';
             html += '<div class="col-6 col-md-2"><div class="p-2 bg-light rounded text-center"><strong>Partits jugats</strong><br>' + esc(j.partitsJugats) + '</div></div>';
@@ -952,12 +1076,18 @@
             html += '<div class="col-6 col-md-2"><div class="p-2 bg-light rounded text-center"><strong>Faltes/partit</strong><br>' + esc(j.foulsPerPartit) + '</div></div>';
             html += '<div class="col-6 col-md-2"><div class="p-2 bg-light rounded text-center"><strong>Faltes/min</strong><br>' + esc(j.foulsPerMinut) + '</div></div>';
             html += '<div class="col-6 col-md-2"><div class="p-2 bg-light rounded text-center"><strong>TL%</strong><br>' + fmtPct(j.ftPct) + '</div></div>';
-            html += '<div class="col-6 col-md-2"><div class="p-2 bg-light rounded text-center"><strong>Punts</strong><br>' + esc(j.totalPoints) + '</div></div></div>';
+            html += '<div class="col-6 col-md-2"><div class="p-2 bg-light rounded text-center"><strong>Punts</strong><br>' + esc(j.totalPoints) + '</div></div>';
+            MANUAL_STAT_DEFS.forEach(function(s) {
+                html += '<div class="col-6 col-md-2"><div class="p-2 bg-light rounded text-center"><strong>' + esc(s.label) + '</strong><br>' + esc(totM[s.key]) + '</div></div>';
+            });
+            html += '</div>';
             html += '<div class="accordion" id="acc-' + nomId + '"><div class="card"><div class="card-header py-2"><button class="btn btn-link btn-sm p-0 text-dark" type="button" data-toggle="collapse" data-target="#c-pm-' + nomId + '">Més/Menys per partit</button></div><div id="c-pm-' + nomId + '" class="collapse" data-parent="#acc-' + nomId + '"><div class="card-body py-2">' + (rowsPm ? '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Partit</th><th>+/-</th></tr></thead><tbody>' + rowsPm + '</tbody></table></div>' : '<p class="mb-0">Sense dades</p>') + '</div></div></div>';
             html += '<div class="card"><div class="card-header py-2"><button class="btn btn-link btn-sm p-0 text-dark" type="button" data-toggle="collapse" data-target="#c-min-' + nomId + '">Minuts per partit</button></div><div id="c-min-' + nomId + '" class="collapse" data-parent="#acc-' + nomId + '"><div class="card-body py-2">' + (rowsMin ? '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Partit</th><th>Min</th></tr></thead><tbody>' + rowsMin + '</tbody></table></div>' : '<p class="mb-0">Sense dades</p>') + '</div></div></div>';
             html += '<div class="card"><div class="card-header py-2"><button class="btn btn-link btn-sm p-0 text-dark" type="button" data-toggle="collapse" data-target="#c-f-' + nomId + '">Faltes per partit</button></div><div id="c-f-' + nomId + '" class="collapse" data-parent="#acc-' + nomId + '"><div class="card-body py-2">' + (rowsF ? '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Partit</th><th>Faltes</th></tr></thead><tbody>' + rowsF + '</tbody></table></div>' : '<p class="mb-0">Sense dades</p>') + '</div></div></div>';
             html += '<div class="card"><div class="card-header py-2"><button class="btn btn-link btn-sm p-0 text-dark" type="button" data-toggle="collapse" data-target="#c-pts-' + nomId + '">Punts per partit</button></div><div id="c-pts-' + nomId + '" class="collapse" data-parent="#acc-' + nomId + '"><div class="card-body py-2">' + (rowsPt ? '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Partit</th><th>Punts</th></tr></thead><tbody>' + rowsPt + '</tbody></table></div>' : '<p class="mb-0">Sense dades</p>') + '</div></div></div>';
-            html += '<div class="card"><div class="card-header py-2"><button class="btn btn-link btn-sm p-0 text-dark" type="button" data-toggle="collapse" data-target="#c-val-' + nomId + '">VAL per partit</button></div><div id="c-val-' + nomId + '" class="collapse" data-parent="#acc-' + nomId + '"><div class="card-body py-2">' + (rowsVal ? '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Partit</th><th>VAL</th></tr></thead><tbody>' + rowsVal + '</tbody></table></div>' : '<p class="mb-0">Sense dades</p>') + '</div></div></div></div></div></div></div>';
+            html += '<div class="card"><div class="card-header py-2"><button class="btn btn-link btn-sm p-0 text-dark" type="button" data-toggle="collapse" data-target="#c-val-' + nomId + '">VAL per partit</button></div><div id="c-val-' + nomId + '" class="collapse" data-parent="#acc-' + nomId + '"><div class="card-body py-2">' + (rowsVal ? '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Partit</th><th>VAL</th></tr></thead><tbody>' + rowsVal + '</tbody></table></div>' : '<p class="mb-0">Sense dades</p>') + '</div></div></div>';
+            html += '<div class="card"><div class="card-header py-2"><button class="btn btn-link btn-sm p-0 text-dark" type="button" data-toggle="collapse" data-target="#c-vale-' + nomId + '">VAL-extès per partit</button></div><div id="c-vale-' + nomId + '" class="collapse" data-parent="#acc-' + nomId + '"><div class="card-body py-2">' + (rowsValExt ? '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Partit</th><th>VAL-extès</th></tr></thead><tbody>' + rowsValExt + '</tbody></table></div>' : '<p class="mb-0">Sense dades</p>') + '</div></div></div>';
+            html += '<div class="card"><div class="card-header py-2"><button class="btn btn-link btn-sm p-0 text-dark" type="button" data-toggle="collapse" data-target="#c-man-' + nomId + '">Stats manuals per partit</button></div><div id="c-man-' + nomId + '" class="collapse" data-parent="#acc-' + nomId + '"><div class="card-body py-2">' + (rowsMan ? '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Partit</th>' + MANUAL_STAT_DEFS.map(function(s) { return '<th class="text-center">' + esc(s.label) + '</th>'; }).join('') + '</tr></thead><tbody>' + rowsMan + '</tbody></table></div>' : '<p class="mb-0">Sense dades</p>') + '</div></div></div></div></div></div></div>';
         }
         body.innerHTML = html;
         if (status) status.style.display = 'none';
@@ -986,7 +1116,7 @@
         var defensa = (data && data.defensa) ? data.defensa : { millors: { 5:[],4:[],3:[],2:[] }, pitjors: { 5:[],4:[],3:[],2:[] } };
         function taulaTop10(rows, headers) {
             var r = rows.map(function(x) { return '<tr><td>' + esc(x.nom) + '</td><td class="text-center">' + (x.pmMillors !== undefined ? x.pmMillors : x.pmPitjors) + '</td><td class="text-center">' + (x.atacMillors !== undefined ? x.atacMillors : x.atacPitjors) + '</td><td class="text-center">' + (x.defMillors !== undefined ? x.defMillors : x.defPitjors) + '</td></tr>'; }).join('');
-            return '<div class="table-responsive"><table class="table table-striped table-bordered table-sm"><thead class="thead-dark"><tr>' + headers + '</tr></thead><tbody>' + r + '</tbody></table></div>';
+            return '<div class="table-responsive"><table class="table table-striped table-bordered table-sm taula-top-sortable"><thead class="thead-dark"><tr>' + headers + '</tr></thead><tbody>' + r + '</tbody></table></div>';
         }
         function blocCombo(entries, k, colHeader, prefix) {
             var list = (entries[k] || []).filter(function(e) { return Number(e.minuts) > 0; });
@@ -1001,8 +1131,8 @@
             return '<div class="card mb-3"><div class="card-header bg-light"><strong>Combinacions de ' + k + ' jugadors</strong></div><div class="card-body p-0 pt-2 pl-2 pr-2"><div class="table-responsive"><table class="table table-striped table-bordered table-sm mb-0"><thead class="thead-dark"><tr><th>Jugadors</th><th>' + colHeader + '</th><th class="text-center">Minuts</th><th class="text-center">Partits</th><th>Detall</th></tr></thead><tbody>' + rows + '</tbody></table></div>' + restHtml + '</div></div>';
         }
         var top10Html = '<p class="text-muted mb-1"><strong>Què mostra aquesta taula?</strong></p><p class="text-muted mb-1 small">Per a cada jugador es compta en quantes combinacions apareix entre les 20 millors/pitjors de cada mètrica.</p><p class="mb-3"><strong>Clica el títol de la columna per ordenar.</strong></p>';
-        top10Html += '<h6 class="mt-2 mb-2">Millors combinacions (Top 20)</h6>' + taulaTop10(top10.millors || [], '<th class="sortable">Jugador</th><th class="text-center sortable">+/- Millors</th><th class="text-center sortable">Atac Millors</th><th class="text-center sortable">Defensa Millors</th>');
-        top10Html += '<h6 class="mt-4 mb-2">Pitjors combinacions (Top 20)</h6>' + taulaTop10(top10.pitjors || [], '<th class="sortable">Jugador</th><th class="text-center sortable">+/- Pitjors</th><th class="text-center sortable">Atac Pitjors</th><th class="text-center sortable">Defensa Pitjors</th>');
+        top10Html += '<h6 class="mt-2 mb-2">Millors combinacions (Top 20)</h6>' + taulaTop10(top10.millors || [], '<th class="sortable">Jugador <span class="sort-icon"></span></th><th class="text-center sortable">+/- Millors <span class="sort-icon"></span></th><th class="text-center sortable">Atac Millors <span class="sort-icon"></span></th><th class="text-center sortable">Defensa Millors <span class="sort-icon"></span></th>');
+        top10Html += '<h6 class="mt-4 mb-2">Pitjors combinacions (Top 20)</h6>' + taulaTop10(top10.pitjors || [], '<th class="sortable">Jugador <span class="sort-icon"></span></th><th class="text-center sortable">+/- Pitjors <span class="sort-icon"></span></th><th class="text-center sortable">Atac Pitjors <span class="sort-icon"></span></th><th class="text-center sortable">Defensa Pitjors <span class="sort-icon"></span></th>');
         var pmMillors = [5,4,3,2].map(function(k) { return blocCombo(pm.millors || {}, k, '+/-', 'pm-m'); }).join('');
         var pmPitjors = [5,4,3,2].map(function(k) { return blocCombo(pm.pitjors || {}, k, '+/-', 'pm-p'); }).join('');
         var atacMillors = [5,4,3,2].map(function(k) { return blocCombo(atac.millors || {}, k, 'Punts atac', 'atac-m'); }).join('');
@@ -1280,6 +1410,7 @@
         resumFaseBtns.querySelectorAll('button[data-fase]').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 var fase = this.getAttribute('data-fase');
+                window._resumFaseActiva = fase;
                 resumFaseBtns.querySelectorAll('button').forEach(function(b) { b.classList.remove('active'); });
                 this.classList.add('active');
                 if (window._resumData) {
