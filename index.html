@@ -88,11 +88,11 @@
             <li class="nav-item"><a class="nav-link" id="tab-combinacions" data-toggle="tab" href="#pan-combinacions" role="tab">Combinacions</a></li>
             <li class="nav-item" id="nav-item-entrada" style="display:none"><a class="nav-link" id="tab-entrada" data-toggle="tab" href="#pan-entrada" role="tab">Stats Manuals</a></li>
             <li class="nav-item" id="nav-item-auditories" style="display:none"><a class="nav-link" id="tab-auditories" data-toggle="tab" href="#pan-auditories" role="tab">Auditories usuari</a></li>
-            <li class="nav-item"><a class="nav-link" id="tab-24-25" data-toggle="tab" href="#pan-24-25" role="tab">Temporada 24-25</a></li><li class="nav-item"><a class="nav-link" id="tab-25-26" data-toggle="tab" href="#pan-25-26" role="tab">Temporada 25-26</a></li>
+            <li class="nav-item"><a class="nav-link" id="tab-anteriors" data-toggle="tab" href="#pan-anteriors" role="tab">Temporades anteriors</a></li>
         </ul>
         </div>
         <div class="tab-content" id="mainTabsContent">
-            <div class="tab-pane fade show active" id="pan-resum" role="tabpanel"><div class="btn-group mb-3" role="group" id="resum-fase-buttons"><button type="button" class="btn btn-outline-secondary active" data-fase="total">Total</button><button type="button" class="btn btn-outline-secondary" data-fase="fase1">Fase 1</button><button type="button" class="btn btn-outline-secondary" data-fase="fase2">Fase 2</button><button type="button" class="btn btn-outline-secondary" data-fase="fase3">Fase 3</button></div><div id="resum-block-total" class="resum-fase-block"><div id="resum-firestore-status" class="text-muted mb-3">Carregant dades des de Firestore...</div><div id="resum-metrics"></div><div id="resum-table"></div></div><div id="resum-block-fase1" class="resum-fase-block" style="display:none;"></div><div id="resum-block-fase2" class="resum-fase-block" style="display:none;"></div><div id="resum-block-fase3" class="resum-fase-block" style="display:none;"></div></div>
+            <div class="tab-pane fade show active" id="pan-resum" role="tabpanel"><div class="btn-group mb-3" role="group" id="resum-fase-buttons"><button type="button" class="btn btn-outline-secondary active" data-fase="total">Total</button><button type="button" class="btn btn-outline-secondary" data-fase="fase1">Fase 1</button><button type="button" class="btn btn-outline-secondary" data-fase="fase2">Fase 2</button><button type="button" class="btn btn-outline-secondary" data-fase="fase3">Fase 3</button></div><div id="resum-block-total" class="resum-fase-block"><div id="resum-firestore-status" class="text-muted mb-3 resum-firestore-status">Carregant dades des de Firestore...</div><div id="resum-metrics" class="resum-metrics"></div><div id="resum-table" class="resum-table"></div></div><div id="resum-block-fase1" class="resum-fase-block" style="display:none;"></div><div id="resum-block-fase2" class="resum-fase-block" style="display:none;"></div><div id="resum-block-fase3" class="resum-fase-block" style="display:none;"></div></div>
             <div class="tab-pane fade" id="pan-ultima" role="tabpanel"><div id="detall-jornada-content"><div class="detall-jornada-status text-muted">Carregant dades des de Firestore...</div><div class="detall-jornada-body"></div></div></div>
             <div class="tab-pane fade" id="pan-detall" role="tabpanel"><div id="per-jugador-content"><div class="per-jugador-status text-muted">Carregant dades des de Firestore...</div><div class="per-jugador-body"></div></div></div>
             <div class="tab-pane fade" id="pan-combinacions" role="tabpanel"><div id="combinacions-content"><div class="combinacions-status text-muted">Carregant dades des de Firestore...</div><div class="combinacions-body"></div></div></div>
@@ -138,7 +138,51 @@
                 </div>
                 <div id="auditories-content" class="p-3 pt-0"><p class="text-muted">Carregant...</p></div>
             </div>
-            <div class="tab-pane fade" id="pan-24-25" role="tabpanel" data-temporada-id="24-25"><div class="temporada-status text-muted">Carregant...</div><div class="temporada-body"></div></div><div class="tab-pane fade" id="pan-25-26" role="tabpanel" data-temporada-id="25-26"><div class="temporada-status text-muted">Carregant...</div><div class="temporada-body"></div></div>
+            
+            <div class="tab-pane fade" id="pan-anteriors" role="tabpanel">
+                <div class="btn-group mb-3 flex-wrap" role="group" id="temporades-anteriors-buttons"></div>
+                <p id="temporades-anteriors-status" class="text-muted">Carregant temporades...</p>
+                <div id="temporades-anteriors-body" style="display:none">
+                    <ul class="nav nav-tabs nav-pills mb-3" id="anteriorsSubTabs" role="tablist">
+                        <li class="nav-item"><a class="nav-link active" id="tab-ant-resum" data-toggle="tab" href="#pan-ant-resum" role="tab">Resum totals</a></li>
+                        <li class="nav-item"><a class="nav-link" id="tab-ant-jornada" data-toggle="tab" href="#pan-ant-jornada" role="tab">Detall jornada</a></li>
+                        <li class="nav-item"><a class="nav-link" id="tab-ant-jugador" data-toggle="tab" href="#pan-ant-jugador" role="tab">Per jugador</a></li>
+                        <li class="nav-item"><a class="nav-link" id="tab-ant-comb" data-toggle="tab" href="#pan-ant-comb" role="tab">Combinacions</a></li>
+                    </ul>
+                    <div class="tab-content" id="anteriorsSubTabsContent">
+                        <div class="tab-pane fade show active" id="pan-ant-resum" role="tabpanel">
+                            <div class="btn-group mb-3" role="group" id="ant-resum-fase-buttons">
+                                <button type="button" class="btn btn-outline-secondary active" data-fase="total">Total</button>
+                                <button type="button" class="btn btn-outline-secondary" data-fase="fase1">Fase 1</button>
+                                <button type="button" class="btn btn-outline-secondary" data-fase="fase2">Fase 2</button>
+                                <button type="button" class="btn btn-outline-secondary" data-fase="fase3">Fase 3</button>
+                            </div>
+                            <div class="resum-firestore-status text-muted mb-3">Carregant...</div>
+                            <div class="resum-metrics"></div>
+                            <div class="resum-table"></div>
+                        </div>
+                        <div class="tab-pane fade" id="pan-ant-jornada" role="tabpanel">
+                            <div id="ant-detall-jornada-content">
+                                <div class="detall-jornada-status text-muted">Carregant...</div>
+                                <div class="detall-jornada-body"></div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="pan-ant-jugador" role="tabpanel">
+                            <div id="ant-per-jugador-content">
+                                <div class="per-jugador-status text-muted">Carregant...</div>
+                                <div class="per-jugador-body"></div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="pan-ant-comb" role="tabpanel">
+                            <div id="ant-combinacions-content">
+                                <div class="combinacions-status text-muted">Carregant...</div>
+                                <div class="combinacions-body"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        
         </div>
     </div>
     </div>
@@ -933,10 +977,13 @@
         return h;
     }
 
-    function renderResumFromFirestore(resum, fase) {
-        var statusEl = document.getElementById('resum-firestore-status');
-        var metricsEl = document.getElementById('resum-metrics');
-        var tableEl = document.getElementById('resum-table');
+    function renderResumFromFirestore(resum, fase, ctx) {
+        ctx = ctx || {};
+        var skipManuals = !!ctx.skipManuals;
+        var root = ctx.root || document.getElementById('pan-resum');
+        var statusEl = (root && root.querySelector('.resum-firestore-status')) || document.getElementById('resum-firestore-status');
+        var metricsEl = (root && root.querySelector('.resum-metrics')) || document.getElementById('resum-metrics');
+        var tableEl = (root && root.querySelector('.resum-table')) || document.getElementById('resum-table');
         if (!metricsEl || !tableEl) return;
 
         function fmtPct(v) { return (v === null || v === undefined) ? '—' : (String(v) + '%'); }
@@ -954,16 +1001,17 @@
         if (fase === 'fase1') titolCard = (nomTemporada ? nomTemporada + ' ' : '') + '(Fase 1)';
         else if (fase === 'fase2') titolCard = (nomTemporada ? nomTemporada + ' ' : '') + '(Fase 2)';
         else if (fase === 'fase3') titolCard = (nomTemporada ? nomTemporada + ' ' : '') + '(Fase 3)';
-        window._resumFaseActiva = fase || 'total';
-        var metricsHtml = renderMetriquesEquip(eq, { titol: titolCard, showLlegenda: true });
+        if (!ctx.root || ctx.root.id === 'pan-resum') window._resumFaseActiva = fase || 'total';
+        else window._antResumFaseActiva = fase || 'total';
+        var metricsHtml = renderMetriquesEquip(eq, { titol: titolCard, showLlegenda: !skipManuals });
         metricsEl.innerHTML = metricsHtml;
 
         var jugadors = (data && data.jugadors) ? data.jugadors : [];
-        var manualsByNom = acumularStatsManuals(partitsManualsPerFase(fase || 'total'));
+        var manualsByNom = skipManuals ? {} : acumularStatsManuals(partitsManualsPerFase(fase || 'total'));
         var rows = '';
         for (var i = 0; i < jugadors.length; i++) {
             var j = jugadors[i] || {};
-            var ms = manualsByNom[j.nom] || emptyManualStats();
+            var ms = skipManuals ? emptyManualStats() : (manualsByNom[j.nom] || emptyManualStats());
             rows += '<tr>'
               + '<td>' + esc(j.nom) + '</td>'
               + '<td class="text-center">' + esc(j.totalPlusminus) + '</td>'
@@ -977,7 +1025,7 @@
               + '<td class="text-center">' + esc(j.foulsPerMinut) + '</td>'
               + '<td class="text-center">' + esc(fmtPct(j.ftPct)) + '</td>'
               + '<td class="text-center">' + esc(j.totalPoints) + '</td>'
-              + manualStatCellsHtml(ms)
+              + (skipManuals ? '' : manualStatCellsHtml(ms))
               + '</tr>';
         }
         tableEl.innerHTML =
@@ -996,7 +1044,7 @@
           + thSortable('F/min', 'Faltes/min')
           + thSortable('TL%', 'TL%')
           + thSortable('Pts', 'Punts')
-          + manualStatHeadersHtml()
+          + (skipManuals ? '' : manualStatHeadersHtml())
           + '</tr></thead>'
           + '<tbody>' + rows + '</tbody></table></div>';
 
@@ -1022,20 +1070,25 @@
         });
     }
 
-    function renderDetallJornada(data) {
-        var wrap = document.querySelector('#detall-jornada-content');
+    function renderDetallJornada(data, ctx) {
+        ctx = ctx || {};
+        var skipManuals = !!ctx.skipManuals;
+        var wrap = ctx.wrap || document.querySelector('#detall-jornada-content');
+        var selectId = ctx.selectId || 'select-jornada';
         if (!wrap) return;
         var status = wrap.querySelector('.detall-jornada-status');
         var body = wrap.querySelector('.detall-jornada-body');
         if (!body) return;
         var partits = (data && data.partits) ? data.partits : [];
-        var prevSel = (document.getElementById('select-jornada') || {}).value;
-        window._detallJornadaData = data || {};
-        if (window._resumData && !window._refreshingManualViews) {
-            renderResumFromFirestore(window._resumData, window._resumFaseActiva || 'total');
+        var prevSel = (document.getElementById(selectId) || {}).value;
+        if (!ctx.wrap) {
+            window._detallJornadaData = data || {};
+            if (window._resumData && !window._refreshingManualViews) {
+                renderResumFromFirestore(window._resumData, window._resumFaseActiva || 'total');
+            }
+            refreshEntradaManualPartits();
+            if (_entradaState.seccio === 'visu') renderEntradaVisualitzacio();
         }
-        refreshEntradaManualPartits();
-        if (_entradaState.seccio === 'visu') renderEntradaVisualitzacio();
         var lastPartit = prevSel || ((data && data.lastPartit) ? data.lastPartit : (partits[0] && partits[0].partit));
         if (lastPartit && partits.length && !partits.some(function(p) { return p.partit === lastPartit; })) {
             lastPartit = (data && data.lastPartit) ? data.lastPartit : (partits[0] && partits[0].partit);
@@ -1044,8 +1097,8 @@
         var opts = partits.map(function(p) { return '<option value="' + esc(p.partit) + '"' + (p.partit === lastPartit ? ' selected' : '') + '>' + esc(p.partit) + '</option>'; }).join('');
         var blocks = partits.map(function(p) {
             var rowsHtml = (p.rows || []).map(function(r) {
-                var st = statsManualsPerPartitJugador(p.partit, r.nom);
-                return '<tr><td>' + esc(r.nom) + '</td><td>' + esc(r.pm) + '</td><td>' + esc(r.val) + '</td><td>' + esc(valExtes(r.val, st)) + '</td><td>' + esc(r.mn) + '</td><td>' + esc(r.mq1) + '</td><td>' + esc(r.mq2) + '</td><td>' + esc(r.mq3) + '</td><td>' + esc(r.mq4) + '</td><td>' + esc(r.mot) + '</td><td>' + esc(r.fl) + '</td><td>' + esc(r.f_per_min) + '</td><td>' + esc(r.pt) + '</td>' + manualStatCellsHtml(st) + '</tr>';
+                var st = skipManuals ? emptyManualStats() : statsManualsPerPartitJugador(p.partit, r.nom);
+                return '<tr><td>' + esc(r.nom) + '</td><td>' + esc(r.pm) + '</td><td>' + esc(r.val) + '</td><td>' + esc(valExtes(r.val, st)) + '</td><td>' + esc(r.mn) + '</td><td>' + esc(r.mq1) + '</td><td>' + esc(r.mq2) + '</td><td>' + esc(r.mq3) + '</td><td>' + esc(r.mq4) + '</td><td>' + esc(r.mot) + '</td><td>' + esc(r.fl) + '</td><td>' + esc(r.f_per_min) + '</td><td>' + esc(r.pt) + '</td>' + (skipManuals ? '' : manualStatCellsHtml(st)) + '</tr>';
             }).join('');
             var eq = (p && p.equips) ? p.equips : {};
             var metricsHtml = renderMetriquesEquip(eq, { titol: "d\'aquest partit", isPartit: true });
@@ -1057,11 +1110,11 @@
                 return '<div class="mt-4"><h6>Top 5 combinacions de 5 jugadors (millor +/-) - ' + esc(q.quart) + '</h6><div class="table-responsive"><table class="table table-striped table-bordered table-sm mb-3"><thead class="thead-dark"><tr><th>Combinació</th><th class="text-center">+/-</th><th class="text-center">Minuts</th><th class="text-center">Quart(s)</th></tr></thead><tbody>' + qTop5 + '</tbody></table></div><h6>Top 5 combinacions de 5 jugadors (pitjor +/-) - ' + esc(q.quart) + '</h6><div class="table-responsive"><table class="table table-striped table-bordered table-sm mb-0"><thead class="thead-dark"><tr><th>Combinació</th><th class="text-center">+/-</th><th class="text-center">Minuts</th><th class="text-center">Quart(s)</th></tr></thead><tbody>' + qBottom5 + '</tbody></table></div></div>';
             }).join('');
             var topBlock = (top5 || bottom5 || topPerQuart) ? '<div class="mt-3">' + (top5 ? '<h6>Top 5 combinacions de 5 jugadors (millor +/-)</h6><div class="table-responsive"><table class="table table-striped table-bordered table-sm mb-3"><thead class="thead-dark"><tr><th>Combinació</th><th class="text-center">+/-</th><th class="text-center">Minuts</th><th class="text-center">Quart(s)</th></tr></thead><tbody>' + top5 + '</tbody></table></div>' : '') + (bottom5 ? '<h6>Top 5 combinacions de 5 jugadors (pitjor +/-)</h6><div class="table-responsive"><table class="table table-striped table-bordered table-sm mb-0"><thead class="thead-dark"><tr><th>Combinació</th><th class="text-center">+/-</th><th class="text-center">Minuts</th><th class="text-center">Quart(s)</th></tr></thead><tbody>' + bottom5 + '</tbody></table></div>' : '') + topPerQuart + '</div>' : '';
-            return '<div class="partit-detail" data-partit="' + esc(p.partit) + '" style="display:' + (p.partit === lastPartit ? 'block' : 'none') + ';"><p class="text-muted mb-2"><strong>' + esc(p.partit) + '</strong>' + esc(p.resultatTxt || '') + '</p>' + metricsHtml + '<div class="table-responsive table-stats-wide"><table class="table table-striped table-bordered table-sm taula-top-sortable taula-stats-completa"><thead class="thead-dark"><tr>' + thSortable('Jugador', 'Jugador', 'left') + thSortable('+/-', '+/-') + thSortable('VAL', 'VAL') + thSortable('VAL-e', 'VAL-extès') + thSortable('Min', 'Minuts') + thSortable('1Q', 'Minuts 1Q') + thSortable('2Q', 'Minuts 2Q') + thSortable('3Q', 'Minuts 3Q') + thSortable('4Q', 'Minuts 4Q') + thSortable('OT', 'Minuts OT') + thSortable('F', 'Faltes') + thSortable('F/min', 'Faltes/min') + thSortable('Pts', 'Punts') + manualStatHeadersHtml() + '</tr></thead><tbody>' + rowsHtml + '</tbody></table></div>' + topBlock + '</div>';
+            return '<div class="partit-detail" data-partit="' + esc(p.partit) + '" style="display:' + (p.partit === lastPartit ? 'block' : 'none') + ';"><p class="text-muted mb-2"><strong>' + esc(p.partit) + '</strong>' + esc(p.resultatTxt || '') + '</p>' + metricsHtml + '<div class="table-responsive table-stats-wide"><table class="table table-striped table-bordered table-sm taula-top-sortable taula-stats-completa"><thead class="thead-dark"><tr>' + thSortable('Jugador', 'Jugador', 'left') + thSortable('+/-', '+/-') + thSortable('VAL', 'VAL') + thSortable('VAL-e', 'VAL-extès') + thSortable('Min', 'Minuts') + thSortable('1Q', 'Minuts 1Q') + thSortable('2Q', 'Minuts 2Q') + thSortable('3Q', 'Minuts 3Q') + thSortable('4Q', 'Minuts 4Q') + thSortable('OT', 'Minuts OT') + thSortable('F', 'Faltes') + thSortable('F/min', 'Faltes/min') + thSortable('Pts', 'Punts') + (skipManuals ? '' : manualStatHeadersHtml()) + '</tr></thead><tbody>' + rowsHtml + '</tbody></table></div>' + topBlock + '</div>';
         }).join('');
-        body.innerHTML = '<div class="form-group"><label for="select-jornada">Partit:</label><select id="select-jornada" class="form-control form-control-sm select-jornada">' + opts + '</select></div><div id="contenidor-partit">' + blocks + '</div>';
+        body.innerHTML = '<div class="form-group"><label for="' + selectId + '">Partit:</label><select id="' + selectId + '" class="form-control form-control-sm select-jornada">' + opts + '</select></div><div class="contenidor-partit">' + blocks + '</div>';
         if (status) status.style.display = 'none';
-        var sel = document.getElementById('select-jornada');
+        var sel = document.getElementById(selectId);
         if (sel) sel.addEventListener('change', function() {
             var v = this.value;
             body.querySelectorAll('.partit-detail').forEach(function(el) { el.style.display = el.getAttribute('data-partit') === v ? 'block' : 'none'; });
@@ -1079,21 +1132,24 @@
         }).catch(function(err) { if (status) status.innerHTML = '<span class="text-danger">Error: ' + esc(err && (err.message || err.code) || err) + '</span>'; });
     }
 
-    function renderPerJugador(data) {
-        var wrap = document.getElementById('per-jugador-content');
+    function renderPerJugador(data, ctx) {
+        ctx = ctx || {};
+        var skipManuals = !!ctx.skipManuals;
+        var wrap = ctx.wrap || document.getElementById('per-jugador-content');
+        var idPrefix = ctx.idPrefix || '';
         if (!wrap) return;
         var status = wrap.querySelector('.per-jugador-status');
         var body = wrap.querySelector('.per-jugador-body');
         if (!body) return;
-        window._perJugadorData = data || {};
+        if (!ctx.wrap) window._perJugadorData = data || {};
         var jugadors = (data && data.jugadors) ? data.jugadors : [];
         function fmtPct(v) { return (v == null) ? '—' : (v + '%'); }
         var html = '';
         for (var i = 0; i < jugadors.length; i++) {
             var j = jugadors[i] || {};
-            var nomId = (j.nom || '').replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '');
+            var nomId = idPrefix + (j.nom || '').replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '');
             var partitNoms = (j.partits || []).map(function(x) { return x.partit; });
-            var totM = acumularStatsManuals(partitNoms)[j.nom] || emptyManualStats();
+            var totM = skipManuals ? emptyManualStats() : (acumularStatsManuals(partitNoms)[j.nom] || emptyManualStats());
             var rowsPm = (j.partits || []).map(function(x) { return '<tr><td>' + esc(x.partit) + '</td><td>' + esc(x.plusminus) + '</td></tr>'; }).join('');
             var rowsMin = (j.partits || []).map(function(x) { return '<tr><td>' + esc(x.partit) + '</td><td>' + esc(x.minuts) + '</td></tr>'; }).join('');
             var rowsF = (j.partits || []).map(function(x) { return '<tr><td>' + esc(x.partit) + '</td><td>' + esc(x.fouls) + '</td></tr>'; }).join('');
@@ -1118,9 +1174,11 @@
             html += '<div class="col-6 col-md-2"><div class="p-2 bg-light rounded text-center"><strong>Faltes/min</strong><br>' + esc(j.foulsPerMinut) + '</div></div>';
             html += '<div class="col-6 col-md-2"><div class="p-2 bg-light rounded text-center"><strong>TL%</strong><br>' + fmtPct(j.ftPct) + '</div></div>';
             html += '<div class="col-6 col-md-2"><div class="p-2 bg-light rounded text-center"><strong>Punts</strong><br>' + esc(j.totalPoints) + '</div></div>';
-            MANUAL_STAT_DEFS.forEach(function(s) {
-                html += '<div class="col-6 col-md-2"><div class="p-2 bg-light rounded text-center"><strong>' + esc(s.label) + '</strong><br>' + esc(totM[s.key]) + '</div></div>';
-            });
+            if (!skipManuals) {
+                MANUAL_STAT_DEFS.forEach(function(s) {
+                    html += '<div class="col-6 col-md-2"><div class="p-2 bg-light rounded text-center"><strong>' + esc(s.label) + '</strong><br>' + esc(totM[s.key]) + '</div></div>';
+                });
+            }
             html += '</div>';
             html += '<div class="accordion" id="acc-' + nomId + '"><div class="card"><div class="card-header py-2"><button class="btn btn-link btn-sm p-0 text-dark" type="button" data-toggle="collapse" data-target="#c-pm-' + nomId + '">Més/Menys per partit</button></div><div id="c-pm-' + nomId + '" class="collapse" data-parent="#acc-' + nomId + '"><div class="card-body py-2">' + (rowsPm ? '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Partit</th><th>+/-</th></tr></thead><tbody>' + rowsPm + '</tbody></table></div>' : '<p class="mb-0">Sense dades</p>') + '</div></div></div>';
             html += '<div class="card"><div class="card-header py-2"><button class="btn btn-link btn-sm p-0 text-dark" type="button" data-toggle="collapse" data-target="#c-min-' + nomId + '">Minuts per partit</button></div><div id="c-min-' + nomId + '" class="collapse" data-parent="#acc-' + nomId + '"><div class="card-body py-2">' + (rowsMin ? '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Partit</th><th>Min</th></tr></thead><tbody>' + rowsMin + '</tbody></table></div>' : '<p class="mb-0">Sense dades</p>') + '</div></div></div>';
@@ -1128,7 +1186,10 @@
             html += '<div class="card"><div class="card-header py-2"><button class="btn btn-link btn-sm p-0 text-dark" type="button" data-toggle="collapse" data-target="#c-pts-' + nomId + '">Punts per partit</button></div><div id="c-pts-' + nomId + '" class="collapse" data-parent="#acc-' + nomId + '"><div class="card-body py-2">' + (rowsPt ? '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Partit</th><th>Punts</th></tr></thead><tbody>' + rowsPt + '</tbody></table></div>' : '<p class="mb-0">Sense dades</p>') + '</div></div></div>';
             html += '<div class="card"><div class="card-header py-2"><button class="btn btn-link btn-sm p-0 text-dark" type="button" data-toggle="collapse" data-target="#c-val-' + nomId + '">VAL per partit</button></div><div id="c-val-' + nomId + '" class="collapse" data-parent="#acc-' + nomId + '"><div class="card-body py-2">' + (rowsVal ? '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Partit</th><th>VAL</th></tr></thead><tbody>' + rowsVal + '</tbody></table></div>' : '<p class="mb-0">Sense dades</p>') + '</div></div></div>';
             html += '<div class="card"><div class="card-header py-2"><button class="btn btn-link btn-sm p-0 text-dark" type="button" data-toggle="collapse" data-target="#c-vale-' + nomId + '">VAL-extès per partit</button></div><div id="c-vale-' + nomId + '" class="collapse" data-parent="#acc-' + nomId + '"><div class="card-body py-2">' + (rowsValExt ? '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Partit</th><th>VAL-extès</th></tr></thead><tbody>' + rowsValExt + '</tbody></table></div>' : '<p class="mb-0">Sense dades</p>') + '</div></div></div>';
-            html += '<div class="card"><div class="card-header py-2"><button class="btn btn-link btn-sm p-0 text-dark" type="button" data-toggle="collapse" data-target="#c-man-' + nomId + '">Stats manuals per partit</button></div><div id="c-man-' + nomId + '" class="collapse" data-parent="#acc-' + nomId + '"><div class="card-body py-2">' + (rowsMan ? '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Partit</th>' + MANUAL_STAT_DEFS.map(function(s) { return '<th class="text-center">' + esc(s.label) + '</th>'; }).join('') + '</tr></thead><tbody>' + rowsMan + '</tbody></table></div>' : '<p class="mb-0">Sense dades</p>') + '</div></div></div></div></div></div></div>';
+            if (!skipManuals) {
+                html += '<div class="card"><div class="card-header py-2"><button class="btn btn-link btn-sm p-0 text-dark" type="button" data-toggle="collapse" data-target="#c-man-' + nomId + '">Stats manuals per partit</button></div><div id="c-man-' + nomId + '" class="collapse" data-parent="#acc-' + nomId + '"><div class="card-body py-2">' + (rowsMan ? '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Partit</th>' + MANUAL_STAT_DEFS.map(function(s) { return '<th class="text-center">' + esc(s.label) + '</th>'; }).join('') + '</tr></thead><tbody>' + rowsMan + '</tbody></table></div>' : '<p class="mb-0">Sense dades</p>') + '</div></div></div>';
+            }
+            html += '</div></div></div></div>';
         }
         body.innerHTML = html;
         if (status) status.style.display = 'none';
@@ -1145,8 +1206,10 @@
         }).catch(function(err) { if (status) status.innerHTML = '<span class="text-danger">Error: ' + esc(err && (err.message || err.code) || err) + '</span>'; });
     }
 
-    function renderCombinacions(data) {
-        var wrap = document.getElementById('combinacions-content');
+    function renderCombinacions(data, ctx) {
+        ctx = ctx || {};
+        var wrap = ctx.wrap || document.getElementById('combinacions-content');
+        var idp = ctx.idPrefix || '';
         if (!wrap) return;
         var status = wrap.querySelector('.combinacions-status');
         var body = wrap.querySelector('.combinacions-body');
@@ -1174,25 +1237,28 @@
         var top10Html = '<p class="text-muted mb-1"><strong>Què mostra aquesta taula?</strong></p><p class="text-muted mb-1 small">Per a cada jugador es compta en quantes combinacions apareix entre les 20 millors/pitjors de cada mètrica.</p><p class="mb-3"><strong>Clica el títol de la columna per ordenar.</strong></p>';
         top10Html += '<h6 class="mt-2 mb-2">Millors combinacions (Top 20)</h6>' + taulaTop10(top10.millors || [], '<th class="sortable">Jugador <span class="sort-icon"></span></th><th class="text-center sortable">+/- Millors <span class="sort-icon"></span></th><th class="text-center sortable">Atac Millors <span class="sort-icon"></span></th><th class="text-center sortable">Defensa Millors <span class="sort-icon"></span></th>');
         top10Html += '<h6 class="mt-4 mb-2">Pitjors combinacions (Top 20)</h6>' + taulaTop10(top10.pitjors || [], '<th class="sortable">Jugador <span class="sort-icon"></span></th><th class="text-center sortable">+/- Pitjors <span class="sort-icon"></span></th><th class="text-center sortable">Atac Pitjors <span class="sort-icon"></span></th><th class="text-center sortable">Defensa Pitjors <span class="sort-icon"></span></th>');
-        var pmMillors = [5,4,3,2].map(function(k) { return blocCombo(pm.millors || {}, k, '+/-', 'pm-m'); }).join('');
-        var pmPitjors = [5,4,3,2].map(function(k) { return blocCombo(pm.pitjors || {}, k, '+/-', 'pm-p'); }).join('');
-        var atacMillors = [5,4,3,2].map(function(k) { return blocCombo(atac.millors || {}, k, 'Punts atac', 'atac-m'); }).join('');
-        var atacPitjors = [5,4,3,2].map(function(k) { return blocCombo(atac.pitjors || {}, k, 'Punts atac', 'atac-p'); }).join('');
-        var defMillors = [5,4,3,2].map(function(k) { return blocCombo(defensa.millors || {}, k, 'Punts en contra', 'def-m'); }).join('');
-        var defPitjors = [5,4,3,2].map(function(k) { return blocCombo(defensa.pitjors || {}, k, 'Punts en contra', 'def-p'); }).join('');
-        var fullHtml = '<ul class="nav nav-tabs nav-pills mb-3" id="combinacionsMetricesTabs" role="tablist"><li class="nav-item"><a class="nav-link active" id="tab-comb-top10" data-toggle="tab" href="#pan-comb-top10" role="tab">Top</a></li><li class="nav-item"><a class="nav-link" id="tab-comb-pm" data-toggle="tab" href="#pan-comb-pm" role="tab">Combinacions +/-</a></li><li class="nav-item"><a class="nav-link" id="tab-comb-atac" data-toggle="tab" href="#pan-comb-atac" role="tab">Combinacions atac</a></li><li class="nav-item"><a class="nav-link" id="tab-comb-defensa" data-toggle="tab" href="#pan-comb-defensa" role="tab">Combinacions defensa</a></li></ul>';
-        fullHtml += '<div class="tab-content" id="combinacionsMetricesTabsContent"><div class="tab-pane fade show active" id="pan-comb-top10" role="tabpanel">' + top10Html + '</div><div class="tab-pane fade" id="pan-comb-pm" role="tabpanel"><p class="text-muted mb-4">Més/menys global. Top 5 per taula; desplegar la resta.</p><ul class="nav nav-tabs nav-pills mb-3"><li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#pan-comb-pm-millors">Millors</a></li><li class="nav-item"><a class="nav-link" data-toggle="tab" href="#pan-comb-pm-pitjors">Pitjors</a></li></ul><div class="tab-content"><div class="tab-pane fade show active" id="pan-comb-pm-millors">' + pmMillors + '</div><div class="tab-pane fade" id="pan-comb-pm-pitjors">' + pmPitjors + '</div></div></div><div class="tab-pane fade" id="pan-comb-atac" role="tabpanel"><p class="text-muted mb-4">Punts atac. Top 5 per taula.</p><ul class="nav nav-tabs nav-pills mb-3"><li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#pan-comb-atac-millors">Millors</a></li><li class="nav-item"><a class="nav-link" data-toggle="tab" href="#pan-comb-atac-pitjors">Pitjors</a></li></ul><div class="tab-content"><div class="tab-pane fade show active" id="pan-comb-atac-millors">' + atacMillors + '</div><div class="tab-pane fade" id="pan-comb-atac-pitjors">' + atacPitjors + '</div></div></div><div class="tab-pane fade" id="pan-comb-defensa" role="tabpanel"><p class="text-muted mb-4">Punts en contra. Top 5 per taula.</p><ul class="nav nav-tabs nav-pills mb-3"><li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#pan-comb-defensa-millors">Millors</a></li><li class="nav-item"><a class="nav-link" data-toggle="tab" href="#pan-comb-defensa-pitjors">Pitjors</a></li></ul><div class="tab-content"><div class="tab-pane fade show active" id="pan-comb-defensa-millors">' + defMillors + '</div><div class="tab-pane fade" id="pan-comb-defensa-pitjors">' + defPitjors + '</div></div></div></div>';
+        var pmMillors = [5,4,3,2].map(function(k) { return blocCombo(pm.millors || {}, k, '+/-', idp + 'pm-m'); }).join('');
+        var pmPitjors = [5,4,3,2].map(function(k) { return blocCombo(pm.pitjors || {}, k, '+/-', idp + 'pm-p'); }).join('');
+        var atacMillors = [5,4,3,2].map(function(k) { return blocCombo(atac.millors || {}, k, 'Punts atac', idp + 'atac-m'); }).join('');
+        var atacPitjors = [5,4,3,2].map(function(k) { return blocCombo(atac.pitjors || {}, k, 'Punts atac', idp + 'atac-p'); }).join('');
+        var defMillors = [5,4,3,2].map(function(k) { return blocCombo(defensa.millors || {}, k, 'Punts en contra', idp + 'def-m'); }).join('');
+        var defPitjors = [5,4,3,2].map(function(k) { return blocCombo(defensa.pitjors || {}, k, 'Punts en contra', idp + 'def-p'); }).join('');
+        var fullHtml = '<ul class="nav nav-tabs nav-pills mb-3" id="' + idp + 'combinacionsMetricesTabs" role="tablist"><li class="nav-item"><a class="nav-link active" id="tab-' + idp + 'comb-top10" data-toggle="tab" href="#pan-' + idp + 'comb-top10" role="tab">Top</a></li><li class="nav-item"><a class="nav-link" id="tab-' + idp + 'comb-pm" data-toggle="tab" href="#pan-' + idp + 'comb-pm" role="tab">Combinacions +/-</a></li><li class="nav-item"><a class="nav-link" id="tab-' + idp + 'comb-atac" data-toggle="tab" href="#pan-' + idp + 'comb-atac" role="tab">Combinacions atac</a></li><li class="nav-item"><a class="nav-link" id="tab-' + idp + 'comb-defensa" data-toggle="tab" href="#pan-' + idp + 'comb-defensa" role="tab">Combinacions defensa</a></li></ul>';
+        fullHtml += '<div class="tab-content" id="' + idp + 'combinacionsMetricesTabsContent"><div class="tab-pane fade show active" id="pan-' + idp + 'comb-top10" role="tabpanel">' + top10Html + '</div><div class="tab-pane fade" id="pan-' + idp + 'comb-pm" role="tabpanel"><p class="text-muted mb-4">Més/menys global. Top 5 per taula; desplegar la resta.</p><ul class="nav nav-tabs nav-pills mb-3"><li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#pan-' + idp + 'comb-pm-millors">Millors</a></li><li class="nav-item"><a class="nav-link" data-toggle="tab" href="#pan-' + idp + 'comb-pm-pitjors">Pitjors</a></li></ul><div class="tab-content"><div class="tab-pane fade show active" id="pan-' + idp + 'comb-pm-millors">' + pmMillors + '</div><div class="tab-pane fade" id="pan-' + idp + 'comb-pm-pitjors">' + pmPitjors + '</div></div></div><div class="tab-pane fade" id="pan-' + idp + 'comb-atac" role="tabpanel"><p class="text-muted mb-4">Punts atac. Top 5 per taula.</p><ul class="nav nav-tabs nav-pills mb-3"><li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#pan-' + idp + 'comb-atac-millors">Millors</a></li><li class="nav-item"><a class="nav-link" data-toggle="tab" href="#pan-' + idp + 'comb-atac-pitjors">Pitjors</a></li></ul><div class="tab-content"><div class="tab-pane fade show active" id="pan-' + idp + 'comb-atac-millors">' + atacMillors + '</div><div class="tab-pane fade" id="pan-' + idp + 'comb-atac-pitjors">' + atacPitjors + '</div></div></div><div class="tab-pane fade" id="pan-' + idp + 'comb-defensa" role="tabpanel"><p class="text-muted mb-4">Punts en contra. Top 5 per taula.</p><ul class="nav nav-tabs nav-pills mb-3"><li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#pan-' + idp + 'comb-defensa-millors">Millors</a></li><li class="nav-item"><a class="nav-link" data-toggle="tab" href="#pan-' + idp + 'comb-defensa-pitjors">Pitjors</a></li></ul><div class="tab-content"><div class="tab-pane fade show active" id="pan-' + idp + 'comb-defensa-millors">' + defMillors + '</div><div class="tab-pane fade" id="pan-' + idp + 'comb-defensa-pitjors">' + defPitjors + '</div></div></div></div>';
         body.innerHTML = fullHtml;
         if (status) status.style.display = 'none';
     }
-    function loadCombinacionsFromFirestore() {
-        var wrap = document.getElementById('combinacions-content');
+    function loadCombinacionsFromFirestore(opts) {
+        opts = opts || {};
+        var wrap = opts.wrap || document.getElementById('combinacions-content');
+        var indexId = opts.indexId || 'index';
+        var pagePrefix = opts.pagePrefix || '';
         if (!wrap) return;
         var status = wrap.querySelector('.combinacions-status');
         if (status) status.textContent = 'Carregant dades des de Firestore...';
         if (!db) { if (status) status.innerHTML = '<span class="text-danger">Firestore no disponible.</span>'; return; }
-        db.collection('stats_combinacions').doc('index').get().then(function(doc) {
-            if (!doc || !doc.exists) { if (status) status.innerHTML = '<span class="text-danger">No hi ha dades: stats_combinacions/index</span>'; return; }
+        db.collection('stats_combinacions').doc(indexId).get().then(function(doc) {
+            if (!doc || !doc.exists) { if (status) status.innerHTML = '<span class="text-danger">No hi ha dades: stats_combinacions/' + indexId + '</span>'; return; }
             var idx = doc.data() || {};
             var pages = idx.pages || {};
             function fetchPagesFor(mk) {
@@ -1203,7 +1269,7 @@
                     var n = ks[k] || 0;
                     for (var pi = 0; pi < n; pi++) {
                         (function(kStr, pageIndex) {
-                            var docId = mk + '_' + kStr + '_p' + pageIndex;
+                            var docId = pagePrefix + mk + '_' + kStr + '_p' + pageIndex;
                             promises.push(db.collection('stats_combinacions').doc(docId).get().then(function(d) {
                                 if (d && d.exists) {
                                     var arr = (d.data() && d.data().entries) ? d.data().entries : [];
@@ -1229,69 +1295,103 @@
                     atac: { millors: res[2], pitjors: res[3] },
                     defensa: { millors: res[4], pitjors: res[5] },
                 };
-                renderCombinacions(data);
+                renderCombinacions(data, { wrap: wrap, idPrefix: opts.idPrefix || '' });
             });
         }).catch(function(err) {
             if (status) status.innerHTML = '<span class="text-danger">Error: ' + esc(err && (err.message || err.code) || err) + '</span>';
         });
     }
 
-    function renderTemporadaExtra(te, panel, fase) {
-        if (!panel) return;
-        var body = panel.querySelector('.temporada-body');
-        var status = panel.querySelector('.temporada-status');
-        if (!body) return;
-        function fmtPct(v) { return (v == null) ? '—' : (v + '%'); }
-        fase = fase || panel.getAttribute('data-fase-activa') || 'total';
-        panel.setAttribute('data-fase-activa', fase);
-        var data = te || {};
-        if (fase && te && te.fases) {
-            if (fase === 'fase1' && te.fases.fase1) data = te.fases.fase1;
-            else if (fase === 'fase2' && te.fases.fase2) data = te.fases.fase2;
-            else if (fase === 'fase3' && te.fases.fase3) data = te.fases.fase3;
-        }
-        var eq = data.equips || {};
-        var titolCard = te.nom || '';
-        if (fase === 'fase1') titolCard = (te.nom ? te.nom + ' ' : '') + '(Fase 1)';
-        else if (fase === 'fase2') titolCard = (te.nom ? te.nom + ' ' : '') + '(Fase 2)';
-        else if (fase === 'fase3') titolCard = (te.nom ? te.nom + ' ' : '') + '(Fase 3)';
-        var hasFases = !!(te.fases && (te.fases.fase1 || te.fases.fase2 || te.fases.fase3));
-        var html = '';
-        if (hasFases) {
-            html += '<div class="btn-group mb-3" role="group">';
-            [['total','Total'],['fase1','Fase 1'],['fase2','Fase 2'],['fase3','Fase 3']].forEach(function(item) {
-                var active = (item[0] === fase) ? ' active' : '';
-                html += '<button type="button" class="btn btn-outline-secondary' + active + '" data-fase="' + item[0] + '">' + item[1] + '</button>';
-            });
-            html += '</div>';
-        }
-        html += renderMetriquesEquip(eq, { titol: titolCard });
-        var jugadors = data.jugadors || [];
-        var rows = jugadors.map(function(j) { return '<tr><td>' + esc(j.nom) + '</td><td>' + esc(j.totalPlusminus) + '</td><td>' + esc(j.totalVal) + '</td><td>' + esc(j.totalMinuts) + '</td><td>' + esc(j.partitsJugats) + '</td><td>' + esc(j.partitsTitular) + '</td><td>' + esc(j.totalFouls) + '</td><td>' + esc(j.foulsPerPartit) + '</td><td>' + esc(j.foulsPerMinut) + '</td><td>' + fmtPct(j.ftPct) + '</td><td>' + esc(j.totalPoints) + '</td></tr>'; }).join('');
-        html += '<div class="table-responsive"><table class="table table-striped table-bordered table-sm taula-top-sortable"><thead class="thead-dark"><tr><th class="sortable">Jugador <span class="sort-icon"></span></th><th class="text-center sortable">+/- <span class="sort-icon"></span></th><th class="text-center sortable">VAL <span class="sort-icon"></span></th><th class="text-center sortable">Minuts <span class="sort-icon"></span></th><th class="text-center sortable">Partits jugats <span class="sort-icon"></span></th><th class="text-center sortable">Partits titular <span class="sort-icon"></span></th><th class="text-center sortable">Faltes <span class="sort-icon"></span></th><th class="text-center sortable">Faltes/partit <span class="sort-icon"></span></th><th class="text-center sortable">Faltes/min <span class="sort-icon"></span></th><th class="text-center sortable">TL% <span class="sort-icon"></span></th><th class="text-center sortable">Punts <span class="sort-icon"></span></th></tr></thead><tbody>' + rows + '</tbody></table></div>';
-        body.innerHTML = html;
-        if (status) status.style.display = 'none';
-        if (hasFases) {
-            body.querySelectorAll('button[data-fase]').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    renderTemporadaExtra(te, panel, this.getAttribute('data-fase'));
-                });
+    function loadTemporadaAnterior(teId) {
+        if (!db || !teId) return;
+        window._antTemporadaId = teId;
+        window._antResumFaseActiva = 'total';
+        var antRoot = document.getElementById('pan-ant-resum');
+        var antFaseBtns = document.getElementById('ant-resum-fase-buttons');
+        if (antFaseBtns) {
+            antFaseBtns.querySelectorAll('button').forEach(function(b) {
+                b.classList.toggle('active', b.getAttribute('data-fase') === 'total');
             });
         }
+        var resumStatus = antRoot && antRoot.querySelector('.resum-firestore-status');
+        if (resumStatus) { resumStatus.style.display = ''; resumStatus.textContent = 'Carregant...'; }
+        db.collection('stats').doc('temporada_' + teId + '_resum').get().then(function(doc) {
+            if (!doc || !doc.exists) {
+                if (resumStatus) resumStatus.innerHTML = '<span class="text-danger">No hi ha dades: stats/temporada_' + teId + '_resum</span>';
+                return;
+            }
+            renderResumFromFirestore(doc.data(), 'total', { root: antRoot, skipManuals: true });
+        }).catch(function(err) {
+            if (resumStatus) resumStatus.innerHTML = '<span class="text-danger">Error: ' + esc(err && (err.message || err.code) || err) + '</span>';
+        });
+        db.collection('stats').doc('temporada_' + teId + '_detall_jornada').get().then(function(doc) {
+            if (!doc || !doc.exists) return;
+            renderDetallJornada(doc.data(), { wrap: document.getElementById('ant-detall-jornada-content'), selectId: 'select-jornada-ant', skipManuals: true });
+        });
+        db.collection('stats').doc('temporada_' + teId + '_per_jugador').get().then(function(doc) {
+            if (!doc || !doc.exists) return;
+            renderPerJugador(doc.data(), { wrap: document.getElementById('ant-per-jugador-content'), idPrefix: 'ant-', skipManuals: true });
+        });
+        loadCombinacionsFromFirestore({
+            wrap: document.getElementById('ant-combinacions-content'),
+            indexId: teId + '_index',
+            pagePrefix: teId + '_',
+            idPrefix: 'ant-',
+        });
     }
     function loadTemporadesExtraFromFirestore() {
-        if (!db) return;
+        var status = document.getElementById('temporades-anteriors-status');
+        var buttons = document.getElementById('temporades-anteriors-buttons');
+        var body = document.getElementById('temporades-anteriors-body');
+        if (!db) {
+            if (status) status.innerHTML = '<span class="text-danger">Firestore no disponible.</span>';
+            return;
+        }
         db.collection('stats').doc('temporades_extra').get().then(function(doc) {
-            if (!doc || !doc.exists) return;
-            var data = doc.data();
-            var list = (data && data.temporades) ? data.temporades : [];
-            for (var i = 0; i < list.length; i++) {
-                var te = list[i];
-                var id = te.id || ('te-' + i);
-                var panel = document.querySelector('#pan-' + id + '[data-temporada-id="' + id + '"]');
-                if (panel) renderTemporadaExtra(te, panel);
+            if (!doc || !doc.exists) {
+                if (status) status.textContent = 'No hi ha temporades anteriors.';
+                return;
             }
-        }).catch(function() {});
+            var list = ((doc.data() || {}).temporades) || [];
+            if (!list.length) {
+                if (status) status.textContent = 'No hi ha temporades anteriors.';
+                return;
+            }
+            if (buttons) {
+                buttons.innerHTML = list.map(function(te, i) {
+                    var active = i === 0 ? ' active' : '';
+                    return '<button type="button" class="btn btn-outline-secondary' + active + '" data-temporada-id="' + esc(te.id) + '">' + esc(te.nom || te.id) + '</button>';
+                }).join('');
+                buttons.querySelectorAll('button[data-temporada-id]').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        buttons.querySelectorAll('button').forEach(function(b) { b.classList.remove('active'); });
+                        this.classList.add('active');
+                        loadTemporadaAnterior(this.getAttribute('data-temporada-id'));
+                    });
+                });
+            }
+            if (status) status.style.display = 'none';
+            if (body) body.style.display = '';
+            loadTemporadaAnterior(list[0].id);
+        }).catch(function(err) {
+            if (status) status.innerHTML = '<span class="text-danger">Error: ' + esc(err && (err.message || err.code) || err) + '</span>';
+        });
+    }
+    var antResumFaseBtns = document.getElementById('ant-resum-fase-buttons');
+    if (antResumFaseBtns) {
+        antResumFaseBtns.querySelectorAll('button[data-fase]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var fase = this.getAttribute('data-fase');
+                antResumFaseBtns.querySelectorAll('button').forEach(function(b) { b.classList.remove('active'); });
+                this.classList.add('active');
+                var teId = window._antTemporadaId;
+                if (!teId || !db) return;
+                db.collection('stats').doc('temporada_' + teId + '_resum').get().then(function(doc) {
+                    if (!doc || !doc.exists) return;
+                    renderResumFromFirestore(doc.data(), fase, { root: document.getElementById('pan-ant-resum'), skipManuals: true });
+                });
+            });
+        });
     }
 
     function loadAuditories() {
